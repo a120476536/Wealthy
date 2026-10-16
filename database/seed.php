@@ -8,12 +8,18 @@ declare(strict_types=1);
 $root = dirname(__DIR__);
 require $root . '/vendor/autoload.php';
 
+// 连接参数支持环境变量覆盖（install.php 安装时注入），默认值保持原样
+$dbHost = getenv('WF_DB_HOST') ?: '127.0.0.1';
+$dbPort = getenv('WF_DB_PORT') ?: '3306';
+$dbName = getenv('WF_DB_NAME') ?: 'wealthy';
+$dbUser = getenv('WF_DB_USER') ?: 'root';
+$dbPass = getenv('WF_DB_PASS') ?: 'root';
 $pdo = new PDO(
-    'mysql:host=127.0.0.1;port=3306;dbname=wealthy;charset=utf8mb4',
-    'root', 'root',
+    "mysql:host={$dbHost};port={$dbPort};dbname={$dbName};charset=utf8mb4",
+    $dbUser, $dbPass,
     [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
 );
-echo "=> connect ok\n";
+echo "=> connect ok ({$dbHost}:{$dbPort}/{$dbName})\n";
 
 function ensureDir(string $d): void { if (!is_dir($d)) mkdir($d, 0777, true); }
 function makeAvatar(string $path, string $name, string $bg): void {

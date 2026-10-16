@@ -6,6 +6,31 @@
 
 ---
 
+## 快速安装
+
+本项目提供一键安装向导 [`install.php`](./install.php)（纯 CLI，不依赖框架启动）。它会自动完成**环境检查 → 建库建表 → 写入数据库配置 → 创建管理员 → 可选导入演示数据**全流程。
+
+```bash
+# 1) 安装依赖
+composer install
+
+# 2) 运行安装向导（一路回车用默认值：127.0.0.1 / 3306 / wealthy / root / root）
+php install.php
+
+# 非交互 / 脚本化安装：
+php install.php --host=127.0.0.1 --port=3306 --db=wealthy \
+  --user=root --pass=root --admin-user=admin --admin-pass=admin888
+
+# 跳过演示数据（仅含管理员与基础配置）：
+php install.php --no-demo
+
+# 重新安装（清空同名表并重建）：
+php install.php --force
+```
+
+> ⚠️ 安装完成后请**删除 `install.php` 与 `install.lock`**，避免生产环境被重复安装或数据库配置泄露。
+> 数据库结构见 [`database/install.sql`](./database/install.sql)，演示数据见 [`database/seed.php`](./database/seed.php)（已支持 `WF_DB_*` 环境变量注入连接）。
+
 ## 功能模块截图（演示）
 
 > 以下截图位于 [`assets/`](./assets) 目录，由 `tests/screenshots.cjs`（Playwright 自动抓取）生成，覆盖前台与后台主要功能模块，便于快速了解产品形态。
