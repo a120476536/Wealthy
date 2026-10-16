@@ -1,0 +1,49 @@
+{extend name="layout/front_layout" /}
+{block name="title"}{:lang('积分明细')} · {$site_name}{/block}
+
+{block name="main"}
+<div class="mx-auto max-w-6xl px-4 py-6">
+  <div class="flex flex-col sm:flex-row gap-6">
+    <div class="w-full sm:w-56 shrink-0">{include file="profile/_nav"}</div>
+    <div class="flex-1 min-w-0">
+      <div class="bg-white rounded-2xl shadow-sm p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-semibold text-slate-800">{:lang('积分明细（当前余额')} {$u.points}{:lang('）')}</h3>
+          <a href="/profile/invite" class="text-sm text-blue-600 hover:underline">{:lang('返回邀请页')} →</a>
+        </div>
+        {if condition="$logs"}
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead><tr class="text-left text-slate-400 border-b border-slate-100"><th class="py-2">{:lang('类型')}</th><th>{:lang('变动')}</th><th>{:lang('余额')}</th><th>{:lang('备注')}</th><th>{:lang('时间')}</th></tr></thead>
+            <tbody>
+            {foreach $logs as $l}
+              <tr class="border-b border-slate-50">
+                <td class="py-2.5">{:points_type_text($l.type)}</td>
+                <td class="{if condition="$l.amount >= 0"}text-green-600{else/}text-red-500{/if} font-semibold">{if condition="$l.amount >= 0"}+{/if}{$l.amount}</td>
+                <td>{$l.balance_after}</td>
+                <td class="text-slate-500 max-w-[180px] truncate">{$l.remark}</td>
+                <td class="text-slate-400">{$l.created_at}</td>
+              </tr>
+            {/foreach}
+            </tbody>
+          </table>
+        </div>
+        {if condition="$totalPages gt 1"}
+        <div class="flex flex-wrap justify-center items-center gap-1 mt-6 text-sm">
+          {if condition="$page gt 1"}<a href="/profile/points-logs?page={$page-1}" class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50">{:lang('上一页')}</a>{/if}
+          {foreach $pages as $i}
+            {if condition="$i eq '...'"}<span class="px-3 py-1.5 text-slate-400">…</span>
+            {elseif condition="$i eq $page"}<span class="px-3 py-1.5 rounded-lg bg-blue-600 text-white">{$i}</span>
+            {else/}<a href="/profile/points-logs?page={$i}" class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50">{$i}</a>{/if}
+          {/foreach}
+          {if condition="$page lt $totalPages"}<a href="/profile/points-logs?page={$page+1}" class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50">{:lang('下一页')}</a>{/if}
+        </div>
+        {/if}
+        {else/}
+        <p class="text-sm text-slate-400 py-6 text-center">{:lang('暂无积分记录，去签到或生成邀请码获取积分吧～')}</p>
+        {/if}
+      </div>
+    </div>
+  </div>
+</div>
+{/block}

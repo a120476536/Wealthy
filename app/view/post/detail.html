@@ -1,0 +1,133 @@
+{extend name="layout/front_layout" /}
+{block name="title"}{$post.title} · {$site_name}{/block}
+
+{block name="main"}
+<div class="mx-auto max-w-6xl px-4 py-6">
+  <div class="text-xs text-slate-400 mb-4"><a href="/posts" class="hover:text-blue-600">{:lang('社区广场')}</a> <span class="mx-1">/</span> <span class="text-slate-500">{$post.cat}</span></div>
+
+  <div class="flex flex-col lg:flex-row gap-6">
+    <!-- 主区 -->
+    <div class="flex-1 min-w-0">
+      <article class="bg-white rounded-2xl shadow-sm p-6">
+        <!-- 作者头部 -->
+        <div class="flex items-center gap-3 pb-5 mb-5 border-b border-slate-100">
+          {if condition="$author"}<a href="/u/{$author.id}"><img src="{:avatar_url($author)}" class="w-12 h-12 rounded-full object-cover"></a>{else/}<div class="w-12 h-12 rounded-full bg-slate-200"></div>{/if}
+          <div class="min-w-0">
+            <div class="flex items-center gap-2">
+              <a href="/u/{$author.id}" class="font-semibold text-slate-900 hover:text-blue-600">{if condition="$author"}{$author.username}{else/}{:lang('匿名')}{/if}</a>
+              <span class="text-xs text-slate-400">{:time_ago($post.created_at)}</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-0.5">{if condition="$author&&$author.bio"}{$author.bio}{else/}{:lang('这个人很神秘，没有简介')}{/if}</p>
+          </div>
+          <div class="ml-auto flex items-center gap-2">
+            {if condition="$isOwner"}
+            <a href="/post/{$post.id}/edit" class="px-3 py-2 rounded-xl border border-slate-200 text-slate-600 text-sm hover:bg-slate-50">{:lang('编辑')}</a>
+            <button onclick="confirmDelete({$post.id})" class="px-3 py-2 rounded-xl border border-red-200 text-red-500 text-sm hover:bg-red-50">{:lang('删除')}</button>
+            {/if}
+          </div>
+        </div>
+
+        <!-- 标题 -->
+        <h1 class="text-2xl font-bold text-slate-900 leading-snug">{$post.title}</h1>
+        <div class="flex flex-wrap items-center gap-2 mt-3 text-xs">
+          <span class="px-2 py-0.5 rounded bg-blue-50 text-blue-600">{$post.cat}</span>
+          {if condition="$post.tag_arr"}
+          {foreach $post.tag_arr as $t}
+          <a href="/posts?tag={$t}" class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-600">#{$t}</a>
+          {/foreach}
+          {/if}
+        </div>
+
+        <!-- 正文 -->
+        <div class="prose-sm max-w-none mt-5 text-slate-700 leading-7 rich-content">
+          {$post.content|raw}
+        </div>
+
+        <!-- 打赏 TA -->
+        {if condition="$author && ($author_wx || $author_ali || ($uid && $uid neq $author.id))"}
+        <div class="mt-6 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-100 rounded-2xl p-5 flex flex-col sm:flex-row items-center gap-4">
+          <div class="flex items-center gap-3 flex-1">
+            <span class="text-3xl">🎁</span>
+            <div>
+              <p class="font-semibold text-slate-800">{:lang('觉得这篇博文有帮助？')}</p>
+              <p class="text-sm text-slate-500">{:lang('你的支持是对')} {$author.username} {:lang('最直接的鼓励，可扫码或消耗积分打赏')}</p>
+            </div>
+          </div>
+          <button onclick="openTip({$author.id}, '{$author.username}', '{$author_wx}', '{$author_ali}')" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 text-white font-semibold hover:shadow-lg transition shrink-0">🎁 {:lang('打赏')} TA</button>
+        </div>
+        {/if}
+
+        <!-- 工具栏 -->
+        <div class="flex items-center gap-4 mt-8 pt-5 border-t border-slate-100 text-sm">
+          <button id="likeBtn" onclick="toggleLike(this,1,{$post.id})" class="flex items-center gap-1.5 {if condition="$liked"}text-blue-600{else/}text-slate-400 hover:text-blue-600{/if}">
+            ❤ <span class="cnt">{$post.like_count}</span>
+          </button>
+          <button id="favBtn" onclick="toggleFavorite(this,{$post.id})" class="flex items-center gap-1.5 {if condition="$faved"}text-amber-600{else/}text-slate-400 hover:text-amber-600{/if}">
+            {if condition="$faved"}⭐ {:lang('已收藏')}{else/}☆ {:lang('收藏')}{/if}
+          </button>
+          <button onclick="copyLink()" class="flex items-center gap-1.5 text-slate-400 hover:text-blue-600">🔗 {:lang('分享')}</button>
+          <span class="ml-auto text-xs text-slate-400">👁 {:number_format($post.view_count)} {:lang('阅读')} · 💬 {$post.comment_count} {:lang('评论')}</span>
+        </div>
+      </article>
+
+      <!-- 评论组件 -->
+      {include file="layout/_comments"}
+    </div>
+
+    <!-- 侧边栏 -->
+    <aside class="w-full lg:w-72 shrink-0 space-y-4">
+      {if condition="$ads.post_side"}
+      {if condition="$ads.post_side.url"}
+      <a href="{$ads.post_side.url}" target="_blank" rel="noopener noreferrer" onclick="trackAdClick({$ads.post_side.id})" class="block rounded-2xl overflow-hidden shadow-sm"><img src="/uploads/{$ads.post_side.image}" class="w-full h-32 object-cover"></a>
+      {else/}
+      <div class="block rounded-2xl overflow-hidden shadow-sm"><img src="/uploads/{$ads.post_side.image}" class="w-full h-32 object-cover"></div>
+      {/if}
+      {/if}
+
+      {if condition="$author"}
+      <div class="bg-white rounded-2xl shadow-sm p-5 text-center">
+        <a href="/u/{$author.id}"><img src="{:avatar_url($author)}" class="w-16 h-16 rounded-full object-cover mx-auto"></a>
+        <a href="/u/{$author.id}" class="block font-semibold text-slate-900 mt-2 hover:text-blue-600">{$author.username}</a>
+        <p class="text-xs text-slate-400 mt-1">{if condition="$author.follower_count"}{$author.follower_count}{else/}0{/if} {:lang('关注者')} · {if condition="$author.post_count"}{$author.post_count}{else/}0{/if} {:lang('篇博文')}</p>
+        <div class="flex items-center gap-2 mt-3">
+          {if condition="$author_wx || $author_ali"}<button onclick="openTip({$author.id}, '{$author.username}', '{$author_wx}', '{$author_ali}')" class="flex-1 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 text-white text-sm font-semibold hover:shadow-lg transition">{:lang('打赏')}</button>{/if}
+          {if condition="$uid && $uid neq $author.id"}<button id="followBtn" onclick="toggleFollow(this,{$author.id})" class="flex-1 py-2 rounded-xl bg-slate-100 text-slate-600 text-sm font-medium hover:bg-slate-200">+ {:lang('关注')}</button>{/if}
+        </div>
+      </div>
+      {/if}
+
+      {if condition="$related"}
+      <div class="bg-white rounded-2xl shadow-sm p-5">
+        <h3 class="font-semibold text-slate-800 mb-3">TA {:lang('的其他博文')}</h3>
+        <div class="space-y-3">
+          {foreach $related as $r}
+          <a href="/post/{$r.id}" class="block group">
+            <p class="text-sm font-medium text-slate-800 group-hover:text-blue-600 line-clamp-2 leading-snug">{$r.title}</p>
+            <p class="text-xs text-slate-400 mt-1">{:time_ago($r.created_at)} · 👁 {:number_format($r.view_count)}</p>
+          </a>
+          {/foreach}
+        </div>
+      </div>
+      {/if}
+
+      <div class="bg-gradient-to-br from-blue-600 to-orange-500 rounded-2xl shadow-sm p-5 text-white">
+        <p class="font-semibold mb-1">{:lang('你的支持很重要')}</p>
+        <p class="text-sm text-blue-50 mb-3">{:lang('打赏是对创作者最直接的鼓励。')}</p>
+        <a href="/post/create" class="inline-block px-4 py-2 bg-white text-blue-600 text-sm font-semibold rounded-full">{:lang('去创作')}</a>
+      </div>
+    </aside>
+  </div>
+</div>
+{/block}
+
+{block name="scripts"}
+{literal}
+<script>
+function copyLink(){
+  var url = location.href;
+  if(navigator.clipboard){ navigator.clipboard.writeText(url).then(function(){ toast(t('链接已复制'), 'success'); }); }
+  else { toast(t('复制失败，请手动复制'), 'error'); }
+}
+</script>
+{/literal}
+{/block}

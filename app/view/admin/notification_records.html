@@ -1,0 +1,69 @@
+{extend name="admin/layout" /}
+{block name="page_title"}{:lang('通知记录')}{/block}
+
+{block name="main"}
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h3 class="card-title">{:lang('通知列表（共 %s）', [$total])}</h3>
+    <div class="flex items-center gap-2 flex-wrap">
+      <a href="/admin/notification-records?source=" class="btn btn-sm {if condition="$source eq ''"}btn-primary{else/}btn-default{/if}">{:lang('全部')}</a>
+      <a href="/admin/notification-records?source=system" class="btn btn-sm {if condition="$source eq 'system'"}btn-primary{else/}btn-default{/if}">{:lang('系统通知')}</a>
+      <a href="/admin/notification-records?source=user" class="btn btn-sm {if condition="$source eq 'user'"}btn-primary{else/}btn-default{/if}">{:lang('用户消息')}</a>
+      <form class="form-inline" method="get" action="/admin/notification-records">
+        <input type="hidden" name="source" value="{$source}">
+        <input type="text" name="kw" value="{$kw}" placeholder="{:lang('搜索接收/发送者或内容')}" class="form-control form-control-sm !w-52">
+        <button class="btn btn-sm btn-primary whitespace-nowrap">搜索</button>
+      </form>
+    </div>
+  </div>
+  <div class="card-body table-responsive p-0">
+    <table class="table table-hover">
+      <thead><tr>
+        <th>ID</th><th>{:lang('来源')}</th><th>{:lang('类型')}</th>
+        <th>{:lang('接收者')}</th><th>{:lang('发送者')}</th>
+        <th>{:lang('标题')}</th><th>{:lang('内容')}</th>
+        <th>{:lang('状态')}</th><th>{:lang('时间')}</th><th>{:lang('操作')}</th>
+      </tr></thead>
+      <tbody>
+      {foreach $rows as $n}
+        <tr>
+          <td>{$n.id}</td>
+          <td>{if condition="$n.source eq 'system'"}<span class="badge badge-primary">{:lang('系统')}</span>{else/}<span class="badge badge-info">{:lang('用户')}</span>{/if}</td>
+          <td>{$n.type_label}</td>
+          <td>{if condition="isset($users[$n.user_id])"}{$users[$n.user_id]['username']}{else/}#{$n.user_id}{/if}</td>
+          <td>{if condition="$n.from_user_id && isset($users[$n.from_user_id])"}{$users[$n.from_user_id]['username']}{else/}-{/if}</td>
+          <td>{if condition="$n.title"}{$n.title}{else/}-{/if}</td>
+          <td class="max-w-xs"><div class="line-clamp-2 text-slate-600">{if condition="$n.content"}{$n.content}{else/}-{/if}</div></td>
+          <td>{if condition="$n.is_read eq 1"}<span class="badge badge-success">{:lang('已读')}</span>{else/}<span class="badge badge-warning">{:lang('未读')}</span>{/if}</td>
+          <td>{$n.created_at}</td>
+          <td>
+            <button onclick="del({$n.id})" class="btn btn-xs btn-default">{:lang('删除')}</button>
+          </td>
+        </tr>
+      {/foreach}
+      {if condition="empty($rows)"}
+        <tr><td colspan="10" class="text-center text-slate-400 py-8">{:lang('暂无通知记录')}</td></tr>
+      {/if}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-body">{$pager|raw}</div>
+</div>
+{/block}
+
+{block name="scripts"}
+{literal}
+<script>
+function del(id){
+  wbConfirm(t('确认删除该通知记录？')).then(function(ok){
+    if(!ok) return;
+    var fd = new FormData();
+    fd.append('csrf_token', window.csrfToken);
+    fd.append('id', id);
+    fetch('/admin/notification-records/delete', { method:'POST', body: fd, headers:{'X-Requested-With':'XMLHttpRequest'} })
+      .then(function(r){ return r.json(); }).then(function(res){ if(res.code===0){ location.reload(); } else wbToast(res.msg, 'error'); });
+  });
+}
+</script>
+{/literal}
+{/block}

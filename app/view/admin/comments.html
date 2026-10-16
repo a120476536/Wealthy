@@ -1,0 +1,61 @@
+{extend name="admin/layout" /}
+{block name="page_title"}{:lang('评论管理')}{/block}
+
+{block name="main"}
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h3 class="card-title">{:lang('全部评论（共 %s）', [$total])}</h3>
+    <form class="form-inline" method="get" action="/admin/comments">
+      <input type="text" name="kw" value="{$kw}" placeholder="{:lang('搜索内容/用户')}" class="form-control form-control-sm !w-44">
+      <button class="btn btn-sm btn-primary whitespace-nowrap">搜索</button>
+    </form>
+  </div>
+  <div class="card-body table-responsive p-0">
+    <table class="table table-hover">
+      <thead><tr><th>ID</th><th>{:lang('用户')}</th><th>{:lang('对象')}</th><th>{:lang('内容')}</th><th>{:lang('状态')}</th><th>{:lang('时间')}</th><th>{:lang('操作')}</th></tr></thead>
+      <tbody>
+      {foreach $comments as $c}
+        <tr>
+          <td>{$c.id}</td>
+          <td>{if condition="isset($users[$c.user_id])"}{$users[$c.user_id]['username']}{else/}{:lang('匿名')}{/if}</td>
+          <td>{if condition="$c.target_type eq 1"}{:lang('博文')} #{$c.target_id}{else/}{:lang('评论')} #{$c.target_id}{/if}</td>
+          <td style="max-width:360px">{if condition="$c.status eq 1"}{$c.content}{else/}<span class="text-slate-400">{:lang('（待审/已驳回）')}{$c.content}</span>{/if}</td>
+          <td><span class="{:audit_status_badge($c.status)} badge">{if condition="$c.status eq 1"}{:lang('通过')}{elseif condition="$c.status eq 2"/}{:lang('驳回')}{else/}{:lang('待审')}{/if}</span></td>
+          <td>{$c.created_at}</td>
+          <td>
+            {if condition="$c.status neq 1"}<button onclick="audit({$c.id}, 'pass')" class="btn btn-xs btn-success">{:lang('通过')}</button>{/if}
+            {if condition="$c.status neq 2"}<button onclick="audit({$c.id}, 'reject')" class="btn btn-xs btn-warning">{:lang('驳回')}</button>{/if}
+            <button onclick="del({$c.id})" class="btn btn-xs btn-danger">删除</button>
+          </td>
+        </tr>
+      {/foreach}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-body">{$pager|raw}</div>
+</div>
+{/block}
+
+{block name="scripts"}
+{literal}
+<script>
+function audit(id, act){
+  var tip = act==='reject' ? t('确认驳回该评论？') : (act==='pass' ? t('确认通过该评论？') : '');
+  var doFetch = function(){
+    var fd = new FormData(); fd.append('csrf_token', window.csrfToken); fd.append('id', id); fd.append('act', act);
+    fetch('/admin/comments/audit', { method:'POST', body: fd, headers:{'X-Requested-With':'XMLHttpRequest'} })
+      .then(function(r){ return r.json(); }).then(function(res){ if(res.code===0){ location.reload(); } else wbToast(res.msg, 'error'); });
+  };
+  if(tip){ wbConfirm(tip).then(function(ok){ if(ok) doFetch(); }); } else { doFetch(); }
+}
+function del(id){
+  wbConfirm(t('确认删除该评论（软删除）？')).then(function(ok){
+    if(!ok) return;
+    var fd = new FormData(); fd.append('csrf_token', window.csrfToken); fd.append('id', id);
+    fetch('/admin/comments/delete', { method:'POST', body: fd, headers:{'X-Requested-With':'XMLHttpRequest'} })
+      .then(function(r){ return r.json(); }).then(function(res){ if(res.code===0){ location.reload(); } else wbToast(res.msg, 'error'); });
+  });
+}
+</script>
+{/literal}
+{/block}

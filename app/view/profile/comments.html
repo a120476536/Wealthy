@@ -1,0 +1,31 @@
+{extend name="layout/front_layout" /}
+{block name="title"}{:lang('我的评论')} · {:lang('个人中心')}{/block}
+
+{block name="main"}
+<div class="mx-auto max-w-6xl px-4 py-6">
+  <div class="flex flex-col sm:flex-row gap-6">
+    <div class="w-full sm:w-56 shrink-0">{include file="profile/_nav"}</div>
+    <div class="flex-1 min-w-0">
+      <h2 class="font-semibold text-slate-900 mb-4">{:lang('我的评论')} <span class="text-slate-400 text-sm font-normal">({:count($comments)})</span></h2>
+
+      {if condition="$comments"}
+      <div class="space-y-3">
+        {foreach $comments as $c}
+        <div class="bg-white rounded-2xl shadow-sm p-4">
+          <div class="flex items-center justify-between">
+            <a href="/post/{$c.target_id}" class="text-sm font-medium text-blue-600 hover:underline line-clamp-1">
+              {if condition="isset($postMap[$c.target_id])"}{:lang('博文：')}{$postMap[$c.target_id]['title']}{else/}{:lang('已删除的博文')}{/if}
+            </a>
+            <span class="text-xs text-slate-400 shrink-0 ml-2">{:time_ago($c.created_at)}</span>
+          </div>
+          <p class="text-sm text-slate-700 mt-2 whitespace-pre-wrap break-words">{if condition="$c.status eq 1"}{$c.content}{else/}<span class="text-slate-400">{:lang('（审核中）')}</span>{/if}</p>
+        </div>
+        {/foreach}
+      </div>
+      {else/}
+      <div class="text-center py-20 text-slate-400"><div class="text-5xl mb-3">💬</div><p>{:lang('还没有发表过评论')}</p></div>
+      {/if}
+    </div>
+  </div>
+</div>
+{/block}

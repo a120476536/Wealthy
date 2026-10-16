@@ -1,0 +1,43 @@
+{extend name="layout/front_layout" /}
+{block name="title"}{:lang('商户收款码指南')} · {$site_name}{/block}
+
+{block name="main"}
+<div class="mx-auto max-w-3xl px-4 py-8">
+  <div class="bg-white rounded-2xl shadow-sm p-8">
+    <h1 class="text-2xl font-bold text-slate-900">{:lang('商户收款码指南')}</h1>
+    <p class="text-sm text-slate-400 mt-1">{:lang('为什么建议升级商户收款码？如何降低收款风险？')}</p>
+
+    <div class="mt-6 space-y-6 text-sm text-slate-700 leading-7">
+      <section>
+        <h2 class="font-semibold text-slate-900 text-base mb-2">{:lang('一、个人收款码的风险')}</h2>
+        <p>{:lang('个人收款码用于熟人小额收款。当频繁接收陌生人的打赏转账（尤其高频、大额）时，容易被支付平台风控系统判定为"疑似经营性收款"，可能导致')}<strong>{:lang('收款受限、到账延迟甚至冻结')}</strong>{:lang('。平台提示横幅即为此类风险提示。')}</p>
+      </section>
+
+      <section>
+        <h2 class="font-semibold text-slate-900 text-base mb-2">{:lang('二、商户收款码的优势')}</h2>
+        <ul class="list-disc pl-5 space-y-1">
+          <li>{:lang('专为经营性收款设计，可承载更高频、更大额的交易，稳定性更好；')}</li>
+          <li>{:lang('支持经营对账、交易凭证，便于与打赏记录核对；')}</li>
+          <li>{:lang('降低被支付平台误判为异常的概率。')}</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2 class="font-semibold text-slate-900 text-base mb-2">{:lang('三、如何上传 / 升级')}</h2>
+        <ol class="list-decimal pl-5 space-y-1">
+          <li>{:lang('点击页面右上角或风控横幅的"上传收款码"；')}</li>
+          <li>{:lang('选择"商户收款码"类型，上传微信 / 支付宝商户码图片；')}</li>
+          <li>{:lang('勾选风险提示确认后提交，进入人工审核；')}</li>
+          <li>{:lang('审核通过后，主页与广场将展示你的商户码，打赏更稳定。')}</li>
+        </ol>
+        <button onclick="openUpload()" class="mt-4 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 text-white text-sm font-semibold hover:shadow-lg transition">{:lang('立即上传收款码')}</button>
+      </section>
+
+      <section class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-amber-800">
+        <p class="font-medium">{:lang('风险提示')}</p>
+        <p class="mt-1 text-xs leading-relaxed">{$site_name}{:lang('为信息展示平台，')}<strong>{:lang('不代收任何资金')}</strong>{:lang('，打赏由付款方通过收款码直接向收款方转账。请妥善保管你的收款码，勿向他人泄露支付密码与验证码。任何以"平台客服"名义要求转账、缴纳保证金的行为均为诈骗。')}</p>
+      </section>
+    </div>
+  </div>
+</div>
+{/block}

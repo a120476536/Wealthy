@@ -1,0 +1,94 @@
+{// 顶部导航}
+<header class="sticky top-0 z-40 bg-white/85 backdrop-blur-md border-b border-slate-100 shadow-sm">
+  <div class="mx-auto max-w-6xl px-4">
+    <div class="flex items-center justify-between h-16">
+      <!-- Logo + 名称 -->
+      <a href="/" class="flex items-center gap-2.5 shrink-0">
+        {if condition="$site_logo"}
+        <img src="{$site_logo}" alt="{$site_name}" class="w-9 h-9 rounded-xl object-cover shadow">
+        {else/}
+        <span class="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-orange-500 flex items-center justify-center text-white font-bold text-lg shadow">富</span>
+        {/if}
+        <span class="leading-tight">
+          <span class="block font-bold text-slate-900 text-lg tracking-tight">{$site_name}</span>
+          <span class="block text-[11px] text-slate-400 hidden sm:block">{:lang($site_slogan)}</span>
+        </span>
+      </a>
+
+      <!-- 主导航 -->
+      <nav class="hidden md:flex items-center gap-1 text-sm font-medium">
+        <a href="/" class="px-3 py-2 rounded-lg {if condition="$active_menu eq 'square'"}bg-blue-50 text-blue-700{else/}text-slate-600 hover:bg-slate-100 hover:text-slate-900{/if}">{:lang('广场')}</a>
+        <a href="/posts" class="px-3 py-2 rounded-lg {if condition="$active_menu eq 'posts'"}bg-blue-50 text-blue-700{else/}text-slate-600 hover:bg-slate-100 hover:text-slate-900{/if}">{:lang('社区')}</a>
+        <a href="/post/create" class="px-3 py-2 rounded-lg {if condition="$active_menu eq 'create'"}bg-blue-50 text-blue-700{else/}text-slate-600 hover:bg-slate-100 hover:text-slate-900{/if}">{:lang('写博文')}</a>
+      </nav>
+
+      <!-- 右侧 -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <form action="/search" method="get" class="hidden sm:block">
+          <input type="text" name="kw" value="{$kw}" placeholder="{:lang('搜索用户 / 博文')}"
+                 class="w-40 lg:w-56 px-3 py-1.5 text-sm rounded-full border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 bg-slate-50">
+        </form>
+
+        {if condition="$uid gt 0"}
+          <!-- 通知 -->
+          <a id="notifLink" href="/profile/notifications" class="relative p-2 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded-full transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"/></svg>
+            {if condition="$unread_count gt 0"}<span id="unreadBadge" class="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center">{$unread_count}</span>{/if}
+          </a>
+
+          <!-- 用户菜单 -->
+          <div class="relative group">
+            <button class="flex items-center gap-2 p-1 rounded-full hover:bg-slate-100 transition">
+              <img src="{:avatar_url($user)}" alt="" class="w-9 h-9 rounded-full object-cover ring-2 ring-white shadow">
+              <svg class="w-4 h-4 text-slate-400 hidden sm:block" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
+            </button>
+            <div class="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-lg border border-slate-100 py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150">
+              <div class="px-4 py-2 border-b border-slate-50">
+                <div class="flex items-center gap-2">
+                  <p class="font-semibold text-slate-800 truncate">{$user.username}</p>
+                  <span class="text-[11px] font-semibold px-1.5 py-0.5 rounded bg-gradient-to-r from-blue-500 to-indigo-500 text-white">{:level_text($user.level)}</span>
+                </div>
+                <p class="text-xs text-slate-400 mt-0.5">{if condition="$user.qr_type eq 2"}{:lang('商户收款码')}{else/}{:lang('个人收款码')}{/if}</p>
+              </div>
+              <a href="/profile" class="flex items-center gap-2 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">👤 {:lang('个人中心')}</a>
+              <a href="/profile/received" class="flex items-center gap-2 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">💰 {:lang('我收到的打赏')}</a>
+              <a href="/profile/posts" class="flex items-center gap-2 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">📝 {:lang('我的博文')}</a>
+              <a href="/profile/favorites" class="flex items-center gap-2 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">⭐ {:lang('我的收藏')}</a>
+              <a href="/profile/edit" class="flex items-center gap-2 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">⚙ {:lang('账号设置')}</a>
+              <div class="border-t border-slate-50 mt-1 pt-1">
+                <a href="/logout" class="flex items-center gap-2 px-4 py-2 text-sm text-red-500 hover:bg-red-50">{:lang('退出登录')}</a>
+              </div>
+            </div>
+          </div>
+        {else/}
+          <a href="/login" class="px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900">{:lang('登录')}</a>
+          <a href="/register" class="px-4 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-full shadow-sm transition">{:lang('注册')}</a>
+        {/if}
+
+        <!-- 语言切换 -->
+        <span class="hidden sm:inline-flex items-center gap-1 text-sm border border-slate-200 rounded-full px-1.5 py-0.5 bg-white">
+          <a href="javascript:switchLang('zh_CN')" class="{if condition="$cur_lang eq 'zh_CN'"}font-bold text-blue-600{else/}text-slate-500 hover:text-slate-700{/if} px-1">中文</a>
+          <span class="text-slate-300">/</span>
+          <a href="javascript:switchLang('en')" class="{if condition="$cur_lang eq 'en'"}font-bold text-blue-600{else/}text-slate-500 hover:text-slate-700{/if} px-1">EN</a>
+        </span>
+
+        <!-- 移动端菜单按钮 -->
+        <button onclick="document.getElementById('mobileMenu').classList.toggle('hidden')" class="md:hidden p-2 text-slate-600">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- 移动端菜单 -->
+    <div id="mobileMenu" class="md:hidden hidden pb-3 border-t border-slate-100">
+      <div class="flex flex-col gap-1 pt-2">
+        <a href="/" class="px-3 py-2 rounded-lg {if condition="$active_menu eq 'square'"}bg-blue-50 text-blue-700{else/}text-slate-600{/if}">{:lang('广场')}</a>
+        <a href="/posts" class="px-3 py-2 rounded-lg {if condition="$active_menu eq 'posts'"}bg-blue-50 text-blue-700{else/}text-slate-600{/if}">{:lang('社区')}</a>
+        <a href="/post/create" class="px-3 py-2 rounded-lg text-slate-600">{:lang('写博文')}</a>
+        <form action="/search" method="get" class="px-3 py-2">
+          <input type="text" name="kw" placeholder="{:lang('搜索用户 / 博文')}" class="w-full px-3 py-1.5 text-sm rounded-full border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-200">
+        </form>
+      </div>
+    </div>
+  </div>
+</header>

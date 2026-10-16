@@ -1,0 +1,562 @@
+<!doctype html>
+<html lang="{if condition="$cur_lang eq 'en'"}en{else/}zh-CN{/if}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{block name="title"}{$site_name} · {:lang($site_slogan)}{/block}</title>
+  <meta name="description" content="{:lang($site_slogan)}">
+  <link rel="shortcut icon" href="/favicon.ico"/>
+
+  <!-- ===== CSS CDN 前台 ===== -->
+  <!-- Tailwind v3.4.1 浏览器内 JIT（Play CDN，锁定版本；v3 没有可直接引用的完整静态 CSS 文件） -->
+  <script src="https://cdn.tailwindcss.com/3.4.1"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bulma@5/bulma.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js@1/src/toastify.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/filepond@4/dist/filepond.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@wangeditor/editor@5/dist/css/style.min.css">
+
+  <style>
+    body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif; }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .modal-fade { animation: fade .18s ease; }
+    @keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    .ql-toolbar, .w-e-toolbar { border-radius: 8px 8px 0 0 !important; }
+    .w-e-text-container, .ql-container { border-radius: 0 0 8px 8px !important; }
+  </style>
+  <script>
+    function t(k){ return (window.__I18N && window.__I18N[k]) ? window.__I18N[k] : k; }
+    window.__I18N = {:i18n_js_dict()};
+  </script>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
+
+  <!-- 风控横幅 -->
+  {if condition="$show_risk_banner eq 1"}
+  <div id="riskBanner" class="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-200 text-amber-800 text-sm">
+    <div class="mx-auto max-w-6xl px-4 py-2.5 flex items-center gap-3">
+      <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>
+      <span class="flex-1">{:lang('为保障收款账号稳定，活跃收款用户建议升级')}<strong>{:lang('商户收款码')}</strong>{:lang('，降低被支付平台限制的风险。')}</span>
+      <a href="/help/merchant-qr" class="font-medium underline hover:text-amber-900">{:lang('查看指南')}</a>
+      <button onclick="closeRiskBanner()" class="text-amber-500 hover:text-amber-700">✕</button>
+    </div>
+  </div>
+  {/if}
+
+  {include file="layout/_header"}
+
+  <main class="flex-1">
+    {block name="main"}{/block}
+  </main>
+
+  {include file="layout/_footer"}
+
+  <!-- ===================== 全局打赏弹窗 ===================== -->
+  <div id="tipModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 p-4">
+    <div class="modal-fade w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+        <h3 class="font-bold text-slate-900">{:lang('向')} <span id="tipName" class="text-blue-600">{:lang('用户')}</span>{:lang('给予社区支持')}</h3>
+        <button onclick="closeModal('tipModal')" class="text-slate-400 hover:text-slate-700 text-xl leading-none">✕</button>
+      </div>
+      <div class="p-5">
+        <!-- 渠道 Tabs -->
+        <div class="flex gap-2 mb-4" id="tipChannelTabs">
+          <button type="button" data-ch="1" class="tip-ch flex-1 py-2 rounded-xl border border-slate-200 text-sm font-medium hover:border-blue-300 transition">{:lang('微信')}</button>
+          <button type="button" data-ch="2" class="tip-ch flex-1 py-2 rounded-xl border border-slate-200 text-sm font-medium hover:border-blue-300 transition">{:lang('支付宝')}</button>
+          <button type="button" data-ch="3" class="tip-ch flex-1 py-2 rounded-xl border border-slate-200 text-sm font-medium hover:border-blue-300 transition">{:lang('积分')}</button>
+        </div>
+
+        <!-- 扫码打赏区 -->
+        <div id="tipScanBox">
+          <div class="bg-slate-50 rounded-xl p-4 flex justify-center">
+            <img id="tipQr" src="" alt=t("收款码") class="w-48 h-48 object-contain bg-white rounded-lg">
+          </div>
+          <p class="text-center text-xs text-slate-400 mt-2">{:lang('请使用对应 App 扫码转账，平台不代收资金')}</p>
+
+          <!-- 金额档位 -->
+          <p class="text-sm font-medium text-slate-600 mt-4 mb-2">{:lang('支持金额')}</p>
+          <div class="grid grid-cols-3 gap-2" id="tipLevels">
+            <button type="button" data-level="1" class="tip-lv py-3 rounded-xl border border-slate-200 hover:border-blue-300 transition">¥0.01</button>
+            <button type="button" data-level="2" class="tip-lv py-3 rounded-xl border border-slate-200 hover:border-blue-300 transition">¥0.10</button>
+            <button type="button" data-level="3" class="tip-lv py-3 rounded-xl border border-blue-500 bg-blue-50 text-blue-700 font-semibold transition">¥1.00</button>
+          </div>
+        </div>
+
+        <!-- 积分打赏区 -->
+        <div id="tipPointBox" style="display:none">
+          <p class="text-sm font-medium text-slate-600 mb-2">{:lang('用积分打赏 · 我的积分：')}<span id="tipMyPoints" class="text-blue-600 font-semibold">0</span></p>
+          <input id="tipPoints" type="number" min="1" step="1" placeholder="{:lang('输入打赏积分数量（至少 1）')}" class="w-full px-3 py-2.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-200">
+          <div class="grid grid-cols-4 gap-2 mt-2" id="tipPointLevels">
+            <button type="button" data-p="10" class="tip-pv py-2 rounded-xl border border-slate-200 hover:border-blue-300 transition text-sm">10</button>
+            <button type="button" data-p="50" class="tip-pv py-2 rounded-xl border border-slate-200 hover:border-blue-300 transition text-sm">50</button>
+            <button type="button" data-p="100" class="tip-pv py-2 rounded-xl border border-slate-200 hover:border-blue-300 transition text-sm">100</button>
+            <button type="button" data-p="520" class="tip-pv py-2 rounded-xl border border-slate-200 hover:border-blue-300 transition text-sm">520</button>
+          </div>
+          <p class="text-xs text-slate-400 mt-2">{:lang('打赏后将扣除你的积分并实时转给作者，不可撤回')}</p>
+        </div>
+
+        <input id="tipRemark" type="text" maxlength="100" placeholder="{:lang('留言（最多100字，选填）')}" class="mt-4 w-full px-3 py-2.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-200">
+      </div>
+      <div class="px-5 py-4 bg-slate-50 flex gap-3">
+        <button onclick="closeModal('tipModal')" class="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-slate-100">{:lang('取消')}</button>
+        <button id="tipSubmitBtn" onclick="submitTip()" class="flex-1 py-2.5 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 shadow-sm">{:lang('我已支付')}</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== 收款码上传弹窗 ===================== -->
+  <div id="uploadModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 p-4 overflow-y-auto">
+    <div class="modal-fade w-full max-w-md bg-white rounded-2xl shadow-2xl my-8 max-h-[85vh] flex flex-col overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
+        <h3 class="font-bold text-slate-900">{:lang('上传收款码')}</h3>
+        <button onclick="closeModal('uploadModal')" class="text-slate-400 hover:text-slate-700 text-xl leading-none">✕</button>
+      </div>
+      <div class="p-5 space-y-4 overflow-y-auto">
+        <!-- 类型 -->
+        <div>
+          <p class="text-sm font-medium text-slate-600 mb-2">{:lang('收款码类型')}</p>
+          <div class="flex gap-3" id="qrTypeWrap">
+            <label class="flex-1 flex items-center gap-2 p-3 rounded-xl border border-slate-200 cursor-pointer hover:border-blue-300">
+              <input type="radio" name="qr_type" value="1" checked class="accent-blue-600"> <span class="text-sm">{:lang('个人收款码')}</span>
+            </label>
+            <label class="flex-1 flex items-center gap-2 p-3 rounded-xl border border-slate-200 cursor-pointer hover:border-blue-300">
+              <input type="radio" name="qr_type" value="2" class="accent-blue-600"> <span class="text-sm">{:lang('商户收款码')}</span>
+            </label>
+          </div>
+        </div>
+        <!-- 双渠道上传：微信 / 支付宝，可任传一个或同时提交 -->
+        <div>
+          <p class="text-sm font-medium text-slate-600 mb-2">{:lang('上传收款码')} <span class="text-xs text-slate-400 font-normal">{:lang('至少传一个渠道，可同时上传两个')}</span></p>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="rounded-xl border border-slate-200 p-2.5">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-xs font-semibold text-slate-700">{:lang('微信收款码')}</span>
+                {if condition="$user"}
+                {if condition="$user.wechat_qr_status eq 2"}<span class="text-[11px] text-emerald-600">{:lang('已通过')}</span>
+                {elseif condition="$user.wechat_qr_status eq 1"}<span class="text-[11px] text-amber-600">{:lang('审核中')}</span>
+                {elseif condition="$user.wechat_qr_status eq 3"}<span class="text-[11px] text-rose-500">{:lang('已驳回')}</span>
+                {else/}<span class="text-[11px] text-slate-400">{:lang('未上传')}</span>{/if}
+                {else/}<span class="text-[11px] text-slate-400">{:lang('未上传')}</span>{/if}
+              </div>
+              <!-- h-40 + overflow-hidden：硬裁剪 FilePond，防止其内部绝对定位面板测量偏差时
+                   向下溢出一层透明区域盖住复选框/提交按钮 -->
+              <div class="h-40 overflow-hidden"><input type="file" id="qrFileWx"></div>
+            </div>
+            <div class="rounded-xl border border-slate-200 p-2.5">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-xs font-semibold text-slate-700">{:lang('支付宝收款码')}</span>
+                {if condition="$user"}
+                {if condition="$user.alipay_qr_status eq 2"}<span class="text-[11px] text-emerald-600">{:lang('已通过')}</span>
+                {elseif condition="$user.alipay_qr_status eq 1"}<span class="text-[11px] text-amber-600">{:lang('审核中')}</span>
+                {elseif condition="$user.alipay_qr_status eq 3"}<span class="text-[11px] text-rose-500">{:lang('已驳回')}</span>
+                {else/}<span class="text-[11px] text-slate-400">{:lang('未上传')}</span>{/if}
+                {else/}<span class="text-[11px] text-slate-400">{:lang('未上传')}</span>{/if}
+              </div>
+              <div class="h-40 overflow-hidden"><input type="file" id="qrFileAli"></div>
+            </div>
+          </div>
+        </div>
+        <!-- 风险提示 -->
+        <label class="flex items-start gap-2 p-3 rounded-xl bg-amber-50 border border-amber-200 cursor-pointer">
+          <input type="checkbox" id="qrRiskConfirm" class="mt-0.5 accent-orange-500">
+          <span class="text-xs text-amber-800 leading-relaxed">{:lang('我已阅读并了解个人收款码高频陌生收款存在被支付平台限制的风险，仍要继续上传。')}</span>
+        </label>
+        <p class="text-[11px] text-slate-400 leading-relaxed">{:lang('支持 JPG / PNG / WEBP，单张最大 2MB。提交后进入人工审核，审核通过方可在广场展示。')}</p>
+      </div>
+      <div class="px-5 py-4 bg-slate-50 flex gap-3 shrink-0">
+        <button onclick="closeModal('uploadModal')" class="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-slate-100">{:lang('取消')}</button>
+        <button onclick="submitQr()" class="flex-1 py-2.5 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 shadow-sm">{:lang('提交审核')}</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 发消息弹窗 -->
+  <div id="msgModal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/40 p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-slate-900">{:lang('发给')} <span id="msgToName" class="text-blue-600"></span></h3>
+        <button onclick="closeModal('msgModal')" class="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
+      </div>
+      <textarea id="msgContent" rows="4" maxlength="500" placeholder="{:lang('写点什么…（最多 500 字）')}" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 resize-none"></textarea>
+      <p id="msgCount" class="text-xs text-slate-400 mt-1 text-right">0/500</p>
+      <div class="flex gap-2 mt-4">
+        <button onclick="closeModal('msgModal')" class="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-slate-50">{:lang('取消')}</button>
+        <button onclick="submitMessage()" class="flex-1 py-2.5 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 shadow-sm">{:lang('发送')}</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 消息查看弹框（系统通知 / 私信会话共用） -->
+  <div id="viewModal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/40 p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[80vh] flex flex-col overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
+        <h3 id="viewTitle" class="font-semibold text-slate-900">{:lang('消息详情')}</h3>
+        <button onclick="closeModal('viewModal')" class="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
+      </div>
+      <div id="viewBody" class="p-5 overflow-y-auto text-sm text-slate-700 whitespace-pre-wrap leading-relaxed flex-1"></div>
+      <!-- 私信回复区：仅私信弹窗显示 -->
+      <div id="pmReplyBox" class="hidden border-t border-slate-100 p-4 shrink-0">
+        <div class="flex gap-2 items-end">
+          <textarea id="pmReplyText" rows="2" maxlength="500" placeholder="{:lang('回复…')}" class="flex-1 resize-none px-3 py-2 text-sm rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 focus:bg-white"></textarea>
+          <button onclick="sendPmReply()" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-xl hover:bg-blue-700 disabled:opacity-50 shrink-0">{:lang('发送')}</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== JS CDN 前台（顺序：jQuery 优先） ===================== -->
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/jquery.validate.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/localization/messages_zh.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/toastify-js@1/src/toastify.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/filepond@4/dist/filepond.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/filepond-plugin-image-preview@4/dist/filepond-plugin-image-preview.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@wangeditor/editor@5/dist/index.min.js"></script>
+
+  <!-- 全局变量（非 literal，可解析模板变量） -->
+  <script>
+    window.csrfToken = '{$csrf_token}';
+    window.uid = {$uid};
+    window.points = {$my_points};
+  </script>
+
+  <!-- i18n: JS 端翻译函数与字典（非 literal，可解析 {:i18n_js_dict()}） -->
+  <script>
+    function t(k){ return (window.__I18N && window.__I18N[k]) ? window.__I18N[k] : k; }
+    window.__I18N = {:i18n_js_dict()};
+  </script>
+
+  {literal}
+  <script>
+    // ---------- 通用工具 ----------
+    function toast(msg, type) {
+      Toastify({ text: msg, duration: 2600, gravity: "top", position: "center",
+        style: { background: type === 'error' ? '#ef4444' : (type === 'success' ? '#22c55e' : '#3b82f6'), borderRadius: '10px' }, }).showToast();
+    }
+    function closeModal(id) {
+      var el = document.getElementById(id);
+      el.classList.add('hidden'); el.classList.remove('flex');
+      if (id === 'uploadModal') {
+        try { if (window._qrPondWx) window._qrPondWx.removeFiles(); } catch(e){}
+        try { if (window._qrPondAli) window._qrPondAli.removeFiles(); } catch(e){}
+      }
+    }
+    function openModal(id) { var el = document.getElementById(id); el.classList.remove('hidden'); el.classList.add('flex'); }
+
+    // ---------- 语言切换：保留当前 path + 查询参数，仅改 lang ----------
+    function switchLang(l) {
+      try {
+        var url = new URL(window.location.href);
+        url.searchParams.set('lang', l);
+        window.location.href = url.pathname + url.search + url.hash;
+      } catch (e) {
+        var sep = window.location.search ? '&' : '?';
+        window.location.href = window.location.pathname + window.location.search + sep + 'lang=' + l;
+      }
+    }
+
+    // ---------- 发消息弹窗（用户间私信，复用通知） ----------
+    var msgToUid = 0;
+    function openMessage(uid, name) {
+      if (!window.uid) { location.href = '/login'; return; }
+      msgToUid = uid;
+      document.getElementById('msgToName').textContent = name || t('该用户');
+      var ta = document.getElementById('msgContent');
+      ta.value = '';
+      document.getElementById('msgCount').textContent = '0/500';
+      openModal('msgModal');
+      setTimeout(function(){ ta.focus(); }, 50);
+    }
+    document.addEventListener('DOMContentLoaded', function(){
+      var ta = document.getElementById('msgContent');
+      if (ta) ta.addEventListener('input', function(){ document.getElementById('msgCount').textContent = ta.value.length + '/500'; });
+    });
+    function submitMessage() {
+      var ta = document.getElementById('msgContent');
+      var content = ta.value.trim();
+      if (!content) { toast(t('消息内容不能为空'), 'error'); return; }
+      postJSON('/profile/send-message', { to_user_id: msgToUid, content: content }, function(res){
+        if (res.code === 0) { closeModal('msgModal'); Swal.fire({ icon: 'success', title: t('已发送'), text: res.msg, confirmButtonText: t('好的') }); }
+        else { toast(res.msg || t('发送失败'), 'error'); }
+      });
+    }
+    // 私信需先关注：点击后先关注对方，成功再打开发消息弹窗
+    function requireFollowThenMsg(uid, name) {
+      var fb = document.getElementById('followBtn');
+      postJSON('/interact/follow', { user_id: uid }, function(res){
+        if (res.code === 0) {
+          if (fb) {
+            fb.textContent = res.following ? t('已关注') : t('已关注');
+            fb.classList.toggle('bg-blue-600', res.following);
+            fb.classList.toggle('text-white', res.following);
+            fb.classList.toggle('bg-slate-100', !res.following);
+            fb.classList.toggle('text-slate-600', !res.following);
+          }
+          if (res.following) { openMessage(uid, name); }
+          else { toast(t('发送失败'), 'error'); }
+        } else { toast(res.msg || t('操作失败'), 'error'); }
+      });
+    }
+
+    // ---------- 消息查看弹框（系统通知 / 私信） ----------
+    // 查看即标记已读；若该条是最后一条未读，则顶部红点整体消失（后端返回剩余未读）
+    // 标题取触发按钮的 data-title；data-from 大于 0 时显示私信回复区
+    var pmReplyTo = 0;
+    function openViewNotice(id, content, isUnread, btn) {
+      document.getElementById('viewTitle').textContent = (btn && btn.dataset.title) ? btn.dataset.title : t('系统通知');
+      pmReplyTo = (btn && parseInt(btn.dataset.from || '0', 10)) || 0;
+      var rbox = document.getElementById('pmReplyBox');
+      if (rbox) rbox.classList.toggle('hidden', !pmReplyTo);
+      var rta = document.getElementById('pmReplyText');
+      if (rta) rta.value = '';
+      document.getElementById('viewBody').textContent = content || '';
+      openModal('viewModal');
+      if (isUnread) {
+        postJSON('/notification/read', { id: id }, function(res){
+          if (res.code === 0) {
+            var row = btn ? btn.closest('.note-row') : null;
+            if (row) {
+              row.classList.remove('bg-blue-50/40');
+              var dot = row.querySelector('.unread-dot'); if (dot) dot.remove();
+              var rb = row.querySelector('.read-btn'); if (rb) rb.remove();
+            }
+            refreshUnreadBadge(res.unread);
+          }
+        });
+      }
+    }
+    // 私信回复：从查看弹窗回复当前私信发送人
+    function sendPmReply() {
+      if (!pmReplyTo) return;
+      var ta = document.getElementById('pmReplyText');
+      var content = (ta && ta.value || '').trim();
+      if (!content) { toast(t('请输入回复内容'), 'error'); return; }
+      var sendBtn = document.querySelector('#pmReplyBox button');
+      if (sendBtn) sendBtn.disabled = true;
+      postJSON('/profile/send-message', { to_user_id: pmReplyTo, content: content }, function(res){
+        if (sendBtn) sendBtn.disabled = false;
+        if (res.code === 0) { ta.value = ''; toast(t('回复已发送'), 'success'); }
+        else toast(res.msg || t('发送失败'), 'error');
+      });
+    }
+    // 私信会话：加载与某人的全部私信并标记已读
+    var pmLoaded = false;
+    function openSession(fromUid, btn) {
+      postJSON('/profile/message-session', { from_user_id: fromUid }, function(res){
+        if (res.code !== 0) { toast(res.msg || t('加载失败'), 'error'); return; }
+        document.getElementById('viewTitle').textContent = t(' ') + res.from_username + t('的私信');
+        var box = document.getElementById('viewBody');
+        box.innerHTML = '';
+        if (!res.messages.length) {
+          var empty = document.createElement('p'); empty.className = 'text-slate-400 text-center py-6'; empty.textContent = t('暂无消息'); box.appendChild(empty);
+        }
+        res.messages.forEach(function(m){
+          var d = document.createElement('div'); d.className = 'mb-3 p-3 rounded-xl bg-blue-50 text-slate-700';
+          var c = document.createElement('div'); c.textContent = m.content; d.appendChild(c);
+          var t = document.createElement('div'); t.className = 'text-[11px] text-slate-400 mt-1'; t.textContent = m.created_at; d.appendChild(t);
+          box.appendChild(d);
+        });
+        openModal('viewModal');
+        refreshUnreadBadge(res.unread);
+        if (btn) {
+          var row = btn.closest('.pm-row');
+          if (row) { var u = row.querySelector('.pm-unread'); if (u) u.remove(); }
+          // 同步更新私信 tab 徽章
+          var pb = document.getElementById('pmBadge');
+          if (pb) { var remain = parseInt(pb.getAttribute('data-unread') || '0', 10) - (btn.getAttribute('data-unread') ? parseInt(btn.getAttribute('data-unread'),10) : 0); if (remain <= 0) pb.remove(); else { pb.textContent = remain; pb.setAttribute('data-unread', remain); } }
+        }
+      });
+    }
+    // 顶部未读红点联动：根据后端返回的剩余未读数刷新
+    function refreshUnreadBadge(unread) {
+      unread = parseInt(unread, 10) || 0;
+      var badge = document.getElementById('unreadBadge');
+      if (unread <= 0) { if (badge) badge.remove(); return; }
+      if (!badge) {
+        var link = document.getElementById('notifLink');
+        if (link) {
+          badge = document.createElement('span');
+          badge.id = 'unreadBadge';
+          badge.className = 'absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center';
+          link.appendChild(badge);
+        }
+      }
+      if (badge) badge.textContent = unread;
+    }
+
+    // ---------- 打赏弹窗 ----------
+    var tipState = { to: 0, name: '', level: 3, channel: 1, wx: '', ali: '', points: 0 };
+    function openTip(uid, name, wx, ali) {
+      tipState = { to: uid, name: name, level: 3, channel: 1, wx: wx || '', ali: ali || '', points: 0 };
+      document.getElementById('tipName').textContent = name;
+      document.getElementById('tipRemark').value = '';
+      var tp = document.getElementById('tipPoints'); if (tp) tp.value = '';
+      var mp = document.getElementById('tipMyPoints'); if (mp) mp.textContent = (window.points | 0);
+      document.querySelectorAll('#tipPointLevels .tip-pv').forEach(function(b){ b.classList.remove('border-blue-500','bg-blue-50','text-blue-700','font-semibold'); b.classList.add('border-slate-200'); });
+      setTipChannel(1);
+      document.querySelectorAll('#tipLevels .tip-lv').forEach(function(b){ b.classList.remove('border-blue-500','bg-blue-50','text-blue-700','font-semibold'); b.classList.add('border-slate-200'); });
+      var def = document.querySelector('#tipLevels .tip-lv[data-level="3"]');
+      def.classList.add('border-blue-500','bg-blue-50','text-blue-700','font-semibold'); def.classList.remove('border-slate-200');
+      openModal('tipModal');
+    }
+    function setTipChannel(ch) {
+      tipState.channel = ch;
+      var isPoint = ch == 3;
+      var scanBox = document.getElementById('tipScanBox');
+      if (scanBox) scanBox.style.display = isPoint ? 'none' : '';
+      var pointBox = document.getElementById('tipPointBox');
+      if (pointBox) pointBox.style.display = isPoint ? '' : 'none';
+      var btn = document.getElementById('tipSubmitBtn');
+      if (btn) btn.textContent = isPoint ? t('用积分打赏') : t('我已支付');
+      if (!isPoint) {
+        var img = document.getElementById('tipQr');
+        img.src = ch == 1 ? tipState.wx : tipState.ali;
+        if (!img.src || img.src.endsWith('/')) img.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192"><text x="50%" y="50%" text-anchor="middle" dy=".3em" font-size="14" fill="%23999">该渠道未上传收款码</text></svg>';
+      }
+      document.querySelectorAll('#tipChannelTabs .tip-ch').forEach(function(b){ var on = b.dataset.ch == ch; b.classList.toggle('border-blue-500', on); b.classList.toggle('bg-blue-50', on); b.classList.toggle('text-blue-700', on); b.classList.toggle('border-slate-200', !on); });
+    }
+    document.querySelectorAll('#tipChannelTabs .tip-ch').forEach(function(b){ b.onclick = function(){ setTipChannel(parseInt(b.dataset.ch)); }; });
+    document.querySelectorAll('#tipLevels .tip-lv').forEach(function(b){ b.onclick = function(){ tipState.level = parseInt(b.dataset.level); document.querySelectorAll('#tipLevels .tip-lv').forEach(function(x){ x.classList.remove('border-blue-500','bg-blue-50','text-blue-700','font-semibold'); x.classList.add('border-slate-200'); }); b.classList.add('border-blue-500','bg-blue-50','text-blue-700','font-semibold'); b.classList.remove('border-slate-200'); }; });
+    document.querySelectorAll('#tipPointLevels .tip-pv').forEach(function(b){ b.onclick = function(){ var inp = document.getElementById('tipPoints'); if (inp) inp.value = parseInt(b.dataset.p, 10); document.querySelectorAll('#tipPointLevels .tip-pv').forEach(function(x){ x.classList.remove('border-blue-500','bg-blue-50','text-blue-700','font-semibold'); x.classList.add('border-slate-200'); }); b.classList.add('border-blue-500','bg-blue-50','text-blue-700','font-semibold'); b.classList.remove('border-slate-200'); }; });
+
+    function submitTip() {
+      if (!tipState.to) return;
+      // 积分打赏分支
+      if (tipState.channel == 3) {
+        if (!window.uid) { location.href = '/login'; return; }
+        var pts = parseInt(document.getElementById('tipPoints').value, 10);
+        if (!pts || pts < 1) { toast(t('）'), 'error'); return; }
+        if (window.points !== undefined && pts > window.points) { toast(t('当前积分不足'), 'error'); return; }
+        var fd2 = new FormData();
+        fd2.append('csrf_token', window.csrfToken);
+        fd2.append('to_user_id', tipState.to);
+        fd2.append('pay_type', 3);
+        fd2.append('points', pts);
+        fd2.append('remark', document.getElementById('tipRemark').value);
+        fetch('/tip/do', { method: 'POST', body: fd2, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+          .then(function(r){ return r.json(); }).then(function(res){
+            if (res.code === 0) { closeModal('tipModal'); toast(res.msg || t('积分打赏成功'), 'success'); if (res.points !== undefined) window.points = res.points; }
+            else { toast(res.msg || t('打赏失败'), 'error'); }
+          }).catch(function(){ toast(t('网络异常'), 'error'); });
+        return;
+      }
+      // 扫码打赏分支（微信 / 支付宝）
+      var fd = new FormData();
+      fd.append('csrf_token', window.csrfToken);
+      fd.append('to_user_id', tipState.to);
+      fd.append('level', tipState.level);
+      fd.append('pay_type', tipState.channel);
+      fd.append('remark', document.getElementById('tipRemark').value);
+      fetch('/tip/do', { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(function(r){ return r.json(); }).then(function(res){
+          if (res.code === 0) { closeModal('tipModal'); Swal.fire({ icon: 'success', title: t('已生成打赏记录'), text: t('平台不代收资金'), confirmButtonText: t('好的') }); }
+          else { toast(res.msg || t('提交失败'), 'error'); }
+        }).catch(function(){ toast(t('网络异常'), 'error'); });
+    }
+
+    // ---------- 收款码上传弹窗（双渠道：微信/支付宝各自独立上传） ----------
+    var upState = { urls: {} };
+    if (window.FilePond) {
+      FilePond.registerPlugin(FilePondPluginImagePreview);
+      function createQrPond(id, ch, label) {
+        var pond = FilePond.create(document.getElementById(id), {
+          name: 'file',
+          allowImagePreview: true, maxFileSize: '2MB',
+          imagePreviewHeight: 140,
+          labelIdle: label,
+          server: {
+            process: {
+              url: '/upload/image',
+              method: 'POST',
+              headers: { 'X-CSRF-TOKEN': window.csrfToken },
+              // 后端 /upload/image 返回纯文本 URL（非 JSON），FilePond 默认 JSON.parse 会失败、
+              // 导致 file.serverId 取不到、图片无法随提交带上、提交像“无响应”。
+              // 用 onload 把响应原文直接作为 serverId。
+              onload: function (response) { return response; }
+            }
+          }
+        });
+        pond.onprocessfile = function(err, file){ if (!err && file.serverId) { upState.urls[ch] = file.serverId; } };
+        return pond;
+      }
+      window._qrPondsReady = false;
+      // 关键：FilePond 不能在弹窗 display:none 时创建——此时测不到高度，
+      // 图片预览面板（绝对定位）会向下溢出、盖住复选框和底部“提交审核”按钮。
+      // 因此延迟到弹窗打开（可见）后首次创建。
+      window.ensureQrPonds = function(){
+        if (window._qrPondsReady) return;
+        window._qrPondsReady = true;
+        window._qrPondWx = createQrPond('qrFileWx', 1, '微信收款码\n拖拽或点击上传');
+        window._qrPondAli = createQrPond('qrFileAli', 2, '支付宝收款码\n拖拽或点击上传');
+      };
+    }
+    function openUpload() {
+      if (!window.uid) { location.href = '/login'; return; }
+      upState = { urls: {} };
+      document.getElementById('qrRiskConfirm').checked = false;
+      openModal('uploadModal');
+      // 弹窗可见后再初始化/复用 ponds，保证 FilePond 高度测量正确
+      if (window.ensureQrPonds) window.ensureQrPonds();
+      try { if (window._qrPondWx) window._qrPondWx.removeFiles(); } catch(e){}
+      try { if (window._qrPondAli) window._qrPondAli.removeFiles(); } catch(e){}
+    }
+    function submitQr() {
+      var type = document.querySelector('input[name="qr_type"]:checked').value;
+      var risk = document.getElementById('qrRiskConfirm').checked;
+      if (!risk) { toast(t('请先勾选风险提示确认'), 'error'); return; }
+      var wx = upState.urls[1] || '';
+      var ali = upState.urls[2] || '';
+      if (!wx && !ali) { toast(t('请至少上传一个渠道的收款码图片'), 'error'); return; }
+      var fd = new FormData();
+      fd.append('csrf_token', window.csrfToken);
+      fd.append('qr_type', type);
+      fd.append('wechat_url', wx);
+      fd.append('alipay_url', ali);
+      fd.append('risk_confirmed', 1);
+      fetch('/profile/upload-qr', { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(function(r){ return r.json(); }).then(function(res){
+          if (res.code === 0) { closeModal('uploadModal'); Swal.fire({ icon: 'success', title: t('已提交'), text: t('收款码进入人工审核，通过后将在广场展示'), confirmButtonText: t('好的') }).then(function(){ location.reload(); }); }
+          else { toast(res.msg || t('提交失败'), 'error'); }
+        }).catch(function(){ toast(t('网络异常'), 'error'); });
+    }
+
+    // ---------- 风控横幅关闭 ----------
+    function closeRiskBanner() {
+      fetch('/profile/close-banner', { method:'POST', body: new FormData([['csrf_token', window.csrfToken]]), headers:{'X-Requested-With':'XMLHttpRequest'} })
+        .then(function(){ var b=document.getElementById('riskBanner'); if(b) b.remove(); }).catch(function(){});
+    }
+
+    // ---------- 通用交互（点赞/收藏/关注/打赏按钮/删除） ----------
+    function postJSON(url, data, cb) {
+      data.csrf_token = window.csrfToken;
+      fetch(url, { method:'POST', body: new URLSearchParams(data), headers:{'X-Requested-With':'XMLHttpRequest','Content-Type':'application/x-www-form-urlencoded'} })
+        .then(function(r){ return r.json(); }).then(function(res){ if(cb) cb(res); else if(res.code===0) toast(res.msg||t('操作成功'),'success'); else toast(res.msg||t('操作失败'),'error'); })
+        .catch(function(){ toast(t('网络异常'), 'error'); });
+    }
+    function toggleLike(btn, targetType, targetId) {
+      postJSON('/interact/like', { target_type: targetType, target_id: targetId }, function(res){
+        if (res.code === 0) { btn.classList.toggle('text-blue-600'); btn.classList.toggle('text-slate-400'); var s=btn.querySelector('.cnt'); if(s) s.textContent = res.count; } else toast(res.msg,'error');
+      });
+    }
+    function toggleFavorite(btn, postId) {
+      postJSON('/interact/favorite', { post_id: postId }, function(res){ if(res.code===0){ if(res.faved) btn.innerHTML=t('已收藏'); else btn.innerHTML=t('收藏'); toast(res.msg,'success'); } else toast(res.msg,'error'); });
+    }
+    function toggleFollow(btn, userId) {
+      postJSON('/interact/follow', { user_id: userId }, function(res){ if(res.code===0){ btn.textContent = res.following ? t('已关注') : t('已关注'); btn.classList.toggle('bg-blue-600', res.following); btn.classList.toggle('text-white', res.following); btn.classList.toggle('bg-slate-100', !res.following); btn.classList.toggle('text-slate-600', !res.following); } else toast(res.msg,'error'); });
+    }
+    function confirmDelete(postId) {
+      Swal.fire({ icon:'warning', title:t('？'), text:t('）'), showCancelButton:true, confirmButtonText:t('删除'), cancelButtonText:t('取消') })
+        .then(function(r){ if(r.isConfirmed) postJSON('/post/delete', { id: postId }, function(res){ if(res.code===0) location.reload(); else toast(res.msg,'error'); }); });
+    }
+  </script>
+  {/literal}
+
+  {block name="scripts"}{/block}
+</body>
+</html>

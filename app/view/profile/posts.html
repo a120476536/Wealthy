@@ -1,0 +1,34 @@
+{extend name="layout/front_layout" /}
+{block name="title"}{:lang('我的博文')} · {:lang('个人中心')}{/block}
+
+{block name="main"}
+<div class="mx-auto max-w-6xl px-4 py-6">
+  <div class="flex flex-col sm:flex-row gap-6">
+    <div class="w-full sm:w-56 shrink-0">{include file="profile/_nav"}</div>
+    <div class="flex-1 min-w-0">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-semibold text-slate-900">{:lang('我的博文')} <span class="text-slate-400 text-sm font-normal">({:count($posts)})</span></h2>
+        <a href="/post/create" class="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">{:lang('写新博文')}</a>
+      </div>
+
+      {if condition="$posts"}
+      <div class="bg-white rounded-2xl shadow-sm divide-y divide-slate-50">
+        {foreach $posts as $p}
+        <div class="flex items-center gap-3 p-4">
+          <div class="flex-1 min-w-0">
+            <a href="/post/{$p.id}" class="font-medium text-slate-800 hover:text-blue-600 line-clamp-1">{$p.title}</a>
+            <p class="text-xs text-slate-400 mt-1">{:time_ago($p.created_at)} · {$p.cat} · 👁 {$p.view_count} · 💬 {$p.comment_count} · ❤ {$p.like_count}</p>
+          </div>
+          <span class="{:audit_status_badge($p.status)} text-[11px] px-2 py-0.5 rounded shrink-0">{:post_status_text($p.status)}</span>
+          <a href="/post/{$p.id}/edit" class="text-xs text-blue-600 hover:underline shrink-0">{:lang('编辑')}</a>
+          <button onclick="confirmDelete({$p.id})" class="text-xs text-red-500 hover:underline shrink-0">{:lang('删除')}</button>
+        </div>
+        {/foreach}
+      </div>
+      {else/}
+      <div class="text-center py-20 text-slate-400"><div class="text-5xl mb-3">📝</div><p>{:lang('还没有博文，')}<a href="/post/create" class="text-blue-600">{:lang('去写一篇')}</a></p></div>
+      {/if}
+    </div>
+  </div>
+</div>
+{/block}

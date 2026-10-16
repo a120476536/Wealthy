@@ -1,0 +1,77 @@
+{extend name="admin/layout" /}
+{block name="page_title"}{:lang('邀请码')}{/block}
+
+{block name="main"}
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h3 class="card-title">{:lang('邀请码（共 %s）', [$total])}</h3>
+    <div class="flex items-center gap-2 flex-wrap">
+      <select id="filterStatus" class="form-control form-control-sm d-inline-block" onchange="location.href='/admin/invite-codes?status='+this.value">
+        <option value="" {if condition="$status eq ''"}selected{/if}>{:lang('全部')}</option>
+        <option value="1" {if condition="$status eq '1'"}selected{/if}>{:lang('启用')}</option>
+        <option value="0" {if condition="$status eq '0'"}selected{/if}>{:lang('禁用')}</option>
+      </select>
+      <input type="number" id="genNum" value="10" min="1" max="100" class="form-control form-control-sm d-inline-block" style="width:90px">
+      <button class="btn btn-sm btn-primary" onclick="gen()">{:lang('生成')}</button>
+      <form class="form-inline d-inline" method="get" action="/admin/invite-codes">
+        <input type="hidden" name="status" value="{$status}">
+        <input type="text" name="kw" value="{$kw}" placeholder="{:lang('搜索邀请码/批次')}" class="form-control form-control-sm !w-44">
+        <button class="btn btn-sm btn-primary whitespace-nowrap">搜索</button>
+      </form>
+    </div>
+  </div>
+  <div class="card-body table-responsive p-0">
+    <table class="table table-hover">
+      <thead><tr><th>ID</th><th>{:lang('邀请码')}</th><th>{:lang('邀请人')}</th><th>{:lang('批次')}</th><th>{:lang('配额')}</th><th>{:lang('已用')}</th><th>{:lang('状态')}</th><th>{:lang('生成时间')}</th><th>{:lang('操作')}</th></tr></thead>
+      <tbody>
+      {foreach $codes as $c}
+        <tr>
+          <td>{$c.id}</td>
+          <td><code>{$c.code}</code></td>
+          <td>{if condition="$c.owner_user_id && isset($owners[$c.owner_user_id])"}{$owners[$c.owner_user_id]}{else/}<span class="text-slate-400">{:lang('系统(后台)')}</span>{/if}</td>
+          <td>{if condition="$c.batch"}{$c.batch}{else/}-{/if}</td>
+          <td>{$c.total_quota}</td>
+          <td><a href="/admin/invite-codes/used" class="text-blue-600">{$c.used_count}</a></td>
+          <td>{if condition="$c.status eq 1"}<span class="badge badge-success">{:lang('启用')}</span>{else/}<span class="badge badge-secondary">{:lang('禁用')}</span>{/if}</td>
+          <td>{$c.created_at}</td>
+          <td>
+            <button onclick="toggle({$c.id}, this)" class="btn btn-xs {if condition="$c.status eq 1"}btn-warning{else/}btn-success{/if}">{if condition="$c.status eq 1"}{:lang('禁用')}{else/}{:lang('启用')}{/if}</button>
+            <button onclick="del({$c.id})" class="btn btn-xs btn-danger">{:lang('删除')}</button>
+          </td>
+        </tr>
+      {/foreach}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-body">{$pager|raw}</div>
+</div>
+{/block}
+
+{block name="scripts"}
+{literal}
+<script>
+function gen(){
+  var num = $('#genNum').val();
+  var fd = new FormData(); fd.append('csrf_token', window.csrfToken); fd.append('num', num);
+  fetch('/admin/invite-codes/generate', { method:'POST', body: fd, headers:{'X-Requested-With':'XMLHttpRequest'} })
+    .then(function(r){ return r.json(); }).then(function(res){ wbResult(res.msg, res.code===0 ? 'success' : 'error'); if(res.code===0) setTimeout(function(){ location.reload(); }, 1200); });
+}
+function toggle(id, btn){
+  wbConfirm(t('确认切换该邀请码状态？')).then(function(ok){
+    if(!ok) return;
+    var fd = new FormData(); fd.append('csrf_token', window.csrfToken); fd.append('id', id);
+    fetch('/admin/invite-codes/toggle', { method:'POST', body: fd, headers:{'X-Requested-With':'XMLHttpRequest'} })
+      .then(function(r){ return r.json(); }).then(function(res){ if(res.code===0){ location.reload(); } else wbToast(res.msg, 'error'); });
+  });
+}
+function del(id){
+  wbConfirm(t('确认删除该邀请码（软删除）？')).then(function(ok){
+    if(!ok) return;
+    var fd = new FormData(); fd.append('csrf_token', window.csrfToken); fd.append('id', id);
+    fetch('/admin/invite-codes/delete', { method:'POST', body: fd, headers:{'X-Requested-With':'XMLHttpRequest'} })
+      .then(function(r){ return r.json(); }).then(function(res){ if(res.code===0){ location.reload(); } else wbToast(res.msg, 'error'); });
+  });
+}
+</script>
+{/literal}
+{/block}

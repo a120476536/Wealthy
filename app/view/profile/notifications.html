@@ -1,0 +1,75 @@
+{extend name="layout/front_layout" /}
+{block name="title"}{:lang('消息通知')} · {:lang('个人中心')}{/block}
+
+{block name="main"}
+<div class="mx-auto max-w-6xl px-4 py-6">
+  <div class="flex flex-col sm:flex-row gap-6">
+    <div class="w-full sm:w-56 shrink-0">{include file="profile/_nav"}</div>
+    <div class="flex-1 min-w-0">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex gap-1 bg-slate-100 rounded-xl p-1">
+          <a href="/profile/notifications?tab=sys" id="tabSys" class="{$tabSysClass}">{:lang('系统通知')}</a>
+          <a href="/profile/notifications?tab=pm" id="tabPm" class="{$tabPmClass}">{:lang('私信')}{if condition="$pmUnread gt 0"}<span id="pmBadge" data-unread="{$pmUnread}" class="ml-1 text-[10px] text-white bg-red-500 rounded-full px-1.5 py-0.5">{$pmUnread}</span>{/if}</a>
+        </div>
+        <button onclick="readAll()" class="text-sm text-blue-600 hover:underline">{:lang('全部标为已读')}</button>
+      </div>
+
+      <!-- 当前 tab 列表（系统通知 / 私信，同一结构，服务端分页） -->
+      <div id="panelList">
+        {if condition="$notes"}
+        <p class="text-xs text-slate-400 mb-2">{:lang('共')} {$total} {:lang('条')}</p>
+        <div class="bg-white rounded-2xl shadow-sm divide-y divide-slate-50">
+          {foreach $notes as $n}
+          <div class="note-row flex items-start gap-3 p-4 {if condition="$n.is_read eq 0"}bg-blue-50/40{/if}">
+            <div class="w-2 h-2 rounded-full mt-2 {if condition="$n.is_read eq 0"}bg-blue-500 unread-dot{else/}bg-transparent{/if} shrink-0"></div>
+            <div class="flex-1 min-w-0">
+              {if condition="$n.row_title"}<p class="text-sm font-medium text-slate-800 truncate">{$n.row_title}</p>{/if}
+              <p class="content-text text-sm text-slate-700">{$n.content}</p>
+              <p class="text-xs text-slate-400 mt-1">{:time_ago($n.created_at)}</p>
+            </div>
+            {if condition="$n.is_read eq 0"}<button class="read-btn text-xs text-blue-600 hover:underline shrink-0" onclick="readOne({$n.id})">{:lang('标已读')}</button>{/if}
+            <button class="text-xs text-slate-500 hover:text-blue-600 hover:underline shrink-0" data-title="{$n.row_title}" data-from="{$n.data_from}" data-content="{$n.content|htmlspecialchars}" onclick="openViewNotice({$n.id}, this.dataset.content, {$n.is_read}==0, this)">{:lang('查看')}</button>
+            <button class="text-xs text-slate-400 hover:text-red-500 hover:underline shrink-0" onclick="delOne({$n.id})">{:lang('删除')}</button>
+          </div>
+          {/foreach}
+        </div>
+        {$pager|raw}
+        {else/}
+        <div class="text-center py-20 text-slate-400">
+          <div class="text-5xl mb-3">{if condition="$tab eq 'pm'"}💬{else/}🔔{/if}</div>
+          <p>{if condition="$tab eq 'pm'"}{:lang('暂无私信')}{else/}{:lang('暂时没有系统通知')}{/if}</p>
+        </div>
+        {/if}
+      </div>
+    </div>
+  </div>
+</div>
+{/block}
+
+{block name="scripts"}
+{literal}
+<script>
+function readOne(id) {
+  postJSON('/notification/read', { id: id }, function(res){ if (res.code === 0) { location.reload(); } });
+}
+function delOne(id) {
+  if (!confirm(t('确定删除这条消息吗？删除后仅自己不再显示。'))) return;
+  postJSON('/notification/delete', { id: id }, function(res){
+    if (res.code === 0) { location.reload(); }
+    else { if (typeof toast === 'function') toast(res.msg || t('删除失败'), 'error'); }
+  });
+}
+function readAll() {
+  postJSON('/notification/read', { id: 0 }, function(res){
+    if (res.code !== 0) return;
+    document.querySelectorAll('.unread-dot').forEach(function(e){ e.remove(); });
+    document.querySelectorAll('.read-btn').forEach(function(e){ e.remove(); });
+    document.querySelectorAll('.note-row').forEach(function(r){ r.classList.remove('bg-blue-50/40'); });
+    document.querySelectorAll('.pm-unread').forEach(function(e){ e.remove(); });
+    refreshUnreadBadge(res.unread);
+    var pb = document.getElementById('pmBadge'); if (pb) pb.remove();
+  });
+}
+</script>
+{/literal}
+{/block}

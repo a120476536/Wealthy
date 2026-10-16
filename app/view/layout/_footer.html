@@ -1,0 +1,38 @@
+<footer class="mt-16 bg-white border-t border-slate-100">
+  <div class="mx-auto max-w-6xl px-4 py-10 grid grid-cols-2 md:grid-cols-4 gap-8 text-sm">
+    <div class="col-span-2 md:col-span-1">
+      <div class="flex items-center gap-2 mb-3">
+        {if condition="$site_logo"}<img src="{$site_logo}" alt="{$site_name}" class="w-8 h-8 rounded-lg object-cover">{else/}<span class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-orange-500 flex items-center justify-center text-white font-bold">富</span>{/if}
+        <span class="font-bold text-slate-900">{$site_name}</span>
+      </div>
+      <p class="text-slate-400 leading-relaxed">{:lang('人人都可以收获来自社区的支持。平台仅展示收款码信息，不代收、不托管任何资金。')}</p>
+    </div>
+    <div>
+      <h4 class="font-semibold text-slate-700 mb-3">{:lang('社区')}</h4>
+      <ul class="space-y-2 text-slate-500">
+        <li><a href="/" class="hover:text-blue-600">{:lang('广场')}</a></li>
+        <li><a href="/posts" class="hover:text-blue-600">{:lang('博文')}</a></li>
+        <li><a href="/post/create" class="hover:text-blue-600">{:lang('写博文')}</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4 class="font-semibold text-slate-700 mb-3">{:lang('帮助')}</h4>
+      <ul class="space-y-2 text-slate-500">
+        <li><a href="/help/merchant-qr" class="hover:text-blue-600">{:lang('商户码申请指南')}</a></li>
+        <li><a href="/help/user-agreement" class="hover:text-blue-600">{:lang('用户协议')}</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4 class="font-semibold text-slate-700 mb-3">{:lang('风险提示')}</h4>
+      <p class="text-slate-400 leading-relaxed text-xs">{:lang('个人收款码高频陌生收款存在被支付平台限制的风险，请理性使用，必要时升级商户收款码。')}</p>
+    </div>
+  </div>
+  <div class="border-t border-slate-50 py-4 text-center text-xs text-slate-400">
+    © {:date('Y')} {$site_name} · {:lang('平台仅作信息展示，不担保收款稳定性')} · {:lang('演示环境数据均为虚构')}
+  </div>
+</footer>
+<script>
+function trackAdClick(id){
+  try { navigator.sendBeacon('/ads/click?id=' + id); } catch(e){}
+}
+</script>

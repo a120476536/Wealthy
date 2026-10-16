@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="{if condition="$cur_lang eq 'en'"}en{else/}zh-CN{/if}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{block name="title"}管理后台{/block} · {$site_name}</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css">
+  <!-- Tailwind v3.4.1 浏览器内 JIT（Play CDN，与前端一致） -->
+  <script src="https://cdn.tailwindcss.com/3.4.1"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+  <style type="text/tailwindcss">
+    body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif; }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+    /* ===== 组件类（用 Tailwind @apply 实现，替换 AdminLTE/Bootstrap） ===== */
+    .btn { @apply inline-flex items-center justify-center gap-1.5 rounded-lg font-medium px-3 py-1.5 text-sm transition-colors duration-150 cursor-pointer border border-transparent select-none; }
+    .btn-sm { @apply px-2.5 py-1 text-xs; }
+    .btn-xs { @apply px-2 py-0.5 text-xs; }
+    .btn-block { @apply w-full; }
+    .btn-primary { @apply bg-blue-600 text-white hover:bg-blue-700; }
+    .btn-success { @apply bg-green-600 text-white hover:bg-green-700; }
+    .btn-danger  { @apply bg-red-600 text-white hover:bg-red-700; }
+    .btn-warning { @apply bg-amber-500 text-white hover:bg-amber-600; }
+    .btn-info    { @apply bg-cyan-600 text-white hover:bg-cyan-700; }
+    .btn-dark    { @apply bg-slate-700 text-white hover:bg-slate-800; }
+    .btn-default { @apply bg-white text-slate-700 border-slate-300 hover:bg-slate-50; }
+
+    .badge { @apply inline-flex items-center rounded-full text-xs font-medium px-2 py-0.5; }
+    .badge-success  { @apply bg-green-100 text-green-700; }
+    .badge-danger   { @apply bg-red-100 text-red-600; }
+    .badge-warning  { @apply bg-amber-100 text-amber-700; }
+    .badge-info     { @apply bg-blue-100 text-blue-700; }
+    .badge-secondary{ @apply bg-slate-100 text-slate-500; }
+    .badge-primary  { @apply bg-blue-100 text-blue-700; }
+
+    .card { @apply bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden; }
+    .card-header { @apply px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3; }
+    .card-body { @apply p-4; }
+    .card-title { @apply text-base font-semibold text-slate-800 m-0; }
+    .card-primary { @apply border-blue-200; }
+    .card-outline { @apply border-slate-200; }
+
+    .form-control { @apply w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400; }
+    .form-control-sm { @apply px-2.5 py-1.5 text-xs; }
+    .form-group { @apply mb-3; }
+    .form-inline { @apply flex items-center gap-2; }
+    .col-form-label { @apply block text-sm font-medium text-slate-600 mb-1; }
+
+    .table { @apply w-full text-sm text-slate-700; }
+    .table th { @apply px-3 py-2.5 text-left font-medium text-slate-500 bg-slate-50 border-b border-slate-200 whitespace-nowrap; }
+    .table td { @apply px-3 py-2.5 border-b border-slate-100 align-middle; }
+    .table-hover tbody tr:hover { @apply bg-slate-50; }
+    .table-sm th, .table-sm td { @apply px-2.5 py-1.5; }
+    .table-responsive { @apply overflow-x-auto; }
+
+    .list-group { @apply flex flex-col; }
+    .list-group-item { @apply flex items-center justify-between px-4 py-3 border-b border-slate-100; }
+    .list-group-flush .list-group-item { @apply border-b border-slate-100; }
+    .list-group-unbordered .list-group-item { @apply border-0; }
+
+    .rounded-circle { @apply rounded-full; }
+    .img-thumbnail { @apply rounded-lg border border-slate-200 object-cover; }
+    .text-muted { @apply text-slate-400; }
+    .text-nowrap { @apply whitespace-nowrap; }
+    .d-flex { @apply flex; }
+    .d-inline { @apply inline-block; }
+    .d-inline-block { @apply inline-block; }
+    .justify-content-between { @apply justify-between; }
+    .align-items-center { @apply items-center; }
+    .row { @apply flex flex-wrap -mx-3; }
+    .col-sm-3 { @apply w-full sm:w-1/4 px-3; }
+    .col-sm-9 { @apply w-full sm:w-3/4 px-3; }
+
+    .small-box { @apply relative overflow-hidden rounded-xl shadow-sm p-5 text-white; }
+    .small-box-footer { @apply inline-block mt-2 text-white/90 text-sm font-medium; }
+    .small-box .icon { @apply absolute right-3 top-3 text-white/20 text-4xl leading-none; }
+    .small-box .inner h3 { @apply text-2xl font-bold m-0; }
+    .small-box .inner p { @apply m-0 text-white/90; }
+
+    .profile-user-img { @apply rounded-full border-4 border-slate-100 object-cover; }
+    .box-profile { @apply text-center; }
+
+    .nav-link { @apply flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-slate-300 hover:bg-slate-800 hover:text-white transition-colors; }
+    .nav-link.active { @apply bg-blue-600 text-white; }
+    .nav-link p { @apply m-0; }
+  </style>
+  <script>
+    function t(k){ return (window.__I18N && window.__I18N[k]) ? window.__I18N[k] : k; }
+    window.__I18N = {:i18n_js_dict()};
+  </script>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased">
+
+  <!-- 侧边栏 -->
+  <aside id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-slate-900 flex flex-col transition-transform duration-200 z-40 -translate-x-full md:translate-x-0">
+    <div class="h-14 flex items-center px-5 text-white font-bold text-lg border-b border-slate-800 shrink-0">
+      {if condition="$site_logo"}<img src="{$site_logo}" alt="{$site_name}" class="w-6 h-6 rounded-lg object-cover mr-2">{else/}<i class="fas fa-gem text-blue-400 mr-2"></i>{/if}{$site_name} {:lang('后台')}
+    </div>
+    <div class="px-3 py-3 border-b border-slate-800 shrink-0">
+      <div class="text-sm text-slate-300"><i class="fas fa-user-shield mr-1.5 text-slate-400"></i>{if condition="$admin"}{$admin.username}{/if}</div>
+    </div>
+    <nav class="flex-1 overflow-y-auto px-3 py-3 space-y-1">
+      <a href="/admin/" class="nav-link {if condition="$active eq 'dashboard'"}active{/if}"><i class="nav-icon fas fa-tachometer-alt w-5 text-center"></i><p>{:lang('仪表盘')}</p></a>
+      <a href="/admin/users" class="nav-link {if condition="$active eq 'users'"}active{/if}"><i class="nav-icon fas fa-users w-5 text-center"></i><p>{:lang('用户管理')}</p></a>
+      <a href="/admin/qr-audit" class="nav-link {if condition="$active eq 'qr_audit'"}active{/if}"><i class="nav-icon fas fa-qrcode w-5 text-center"></i><p>{:lang('收款码审核')}</p></a>
+      <a href="/admin/tips" class="nav-link {if condition="$active eq 'tips'"}active{/if}"><i class="nav-icon fas fa-gift w-5 text-center"></i><p>{:lang('打赏管理')}</p></a>
+      <a href="/admin/disputes" class="nav-link {if condition="$active eq 'disputes'"}active{/if}"><i class="nav-icon fas fa-balance-scale w-5 text-center"></i><p>{:lang('纠纷处理')}</p></a>
+      <a href="/admin/posts" class="nav-link {if condition="$active eq 'posts'"}active{/if}"><i class="nav-icon fas fa-file-alt w-5 text-center"></i><p>{:lang('博文管理')}</p></a>
+      <a href="/admin/post-category" class="nav-link {if condition="$active eq 'post_category'"}active{/if}"><i class="nav-icon fas fa-tags w-5 text-center"></i><p>{:lang('博文分类')}</p></a>
+      <a href="/admin/comments" class="nav-link {if condition="$active eq 'comments'"}active{/if}"><i class="nav-icon fas fa-comments w-5 text-center"></i><p>{:lang('评论管理')}</p></a>
+      <a href="/admin/reports" class="nav-link {if condition="$active eq 'reports'"}active{/if}"><i class="nav-icon fas fa-flag w-5 text-center"></i><p>{:lang('举报处理')}</p></a>
+      <a href="/admin/sensitive-words" class="nav-link {if condition="$active eq 'sensitive_words'"}active{/if}"><i class="nav-icon fas fa-ban w-5 text-center"></i><p>{:lang('敏感词')}</p></a>
+      <a href="/admin/ads" class="nav-link {if condition="$active eq 'ads'"}active{/if}"><i class="nav-icon fas fa-ad w-5 text-center"></i><p>{:lang('广告管理')}</p></a>
+      <a href="/admin/risk-monitor" class="nav-link {if condition="$active eq 'risk_monitor'"}active{/if}"><i class="nav-icon fas fa-shield-alt w-5 text-center"></i><p>{:lang('风控监控')}</p></a>
+      <a href="/admin/notifications" class="nav-link {if condition="$active eq 'notifications'"}active{/if}"><i class="nav-icon fas fa-bullhorn w-5 text-center"></i><p>{:lang('站内通知')}</p></a>
+      <a href="/admin/notification-records" class="nav-link {if condition="$active eq 'notification_records'"}active{/if}"><i class="nav-icon fas fa-envelope-open-text w-5 text-center"></i><p>{:lang('通知记录')}</p></a>
+      <a href="/admin/system-setting" class="nav-link {if condition="$active eq 'system_setting'"}active{/if}"><i class="nav-icon fas fa-cog w-5 text-center"></i><p>{:lang('系统设置')}</p></a>
+      <a href="/admin/admin-logs" class="nav-link {if condition="$active eq 'admin_logs'"}active{/if}"><i class="nav-icon fas fa-history w-5 text-center"></i><p>{:lang('操作日志')}</p></a>
+      <a href="/admin/invite-codes" class="nav-link {if condition="$active eq 'invite_codes'"}active{/if}"><i class="nav-icon fas fa-ticket-alt w-5 text-center"></i><p>{:lang('邀请码')}</p></a>
+      <a href="/admin/admins" class="nav-link {if condition="$active eq 'admins'"}active{/if}"><i class="nav-icon fas fa-user-shield w-5 text-center"></i><p>{:lang('管理员')}</p></a>
+    </nav>
+  </aside>
+
+  <!-- 移动端遮罩 -->
+  <div id="sideOverlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/40 z-30 hidden md:hidden"></div>
+
+  <!-- 主区域 -->
+  <div class="md:pl-64 flex flex-col min-h-screen">
+    <header class="sticky top-0 z-20 bg-white border-b border-slate-200 px-4 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <button onclick="toggleSidebar()" class="md:hidden text-slate-600 hover:text-slate-900 text-lg"><i class="fas fa-bars"></i></button>
+        <span class="text-sm text-slate-400 hidden sm:inline">{:lang('管理后台')}</span>
+      </div>
+      <div class="flex items-center gap-1">
+        <span class="inline-flex items-center gap-1 text-sm border border-slate-200 rounded-full px-1.5 py-0.5 bg-white">
+          <a href="javascript:switchLang('zh_CN')" class="{if condition="$cur_lang eq 'zh_CN'"}font-bold text-blue-600{else/}text-slate-500{/if} px-1">中文</a>
+          <span class="text-slate-300">/</span>
+          <a href="javascript:switchLang('en')" class="{if condition="$cur_lang eq 'en'"}font-bold text-blue-600{else/}text-slate-500{/if} px-1">EN</a>
+        </span>
+        <a href="/" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-slate-600 hover:bg-slate-100"><i class="fas fa-external-link-alt"></i> {:lang('前台')}</a>
+        <a href="/admin/logout" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-slate-600 hover:bg-slate-100"><i class="fas fa-sign-out-alt"></i> {:lang('退出')}</a>
+      </div>
+    </header>
+
+    <main class="flex-1 p-4 md:p-6">
+      <div class="mb-5">
+        <h1 class="text-xl font-bold text-slate-900">{block name="page_title"}{:lang('仪表盘')}{/block}</h1>
+      </div>
+      {block name="main"}{/block}
+    </main>
+
+    <footer class="px-4 py-3 text-xs text-slate-400 border-t border-slate-200">
+      <strong>{$site_name}</strong> {:lang('管理后台')} · {:lang('仅用于演示')}
+    </footer>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+  <script>window.csrfToken = '{$csrf_token}';</script>
+  <script>
+    function toggleSidebar(){
+      var sb = document.getElementById('sidebar');
+      var ov = document.getElementById('sideOverlay');
+      var hidden = sb.classList.contains('-translate-x-full');
+      if(hidden){ sb.classList.remove('-translate-x-full'); ov.classList.remove('hidden'); }
+      else { sb.classList.add('-translate-x-full'); ov.classList.add('hidden'); }
+    }
+    function switchLang(l) {
+      try {
+        var url = new URL(window.location.href);
+        url.searchParams.set('lang', l);
+        window.location.href = url.pathname + url.search + url.hash;
+      } catch (e) {
+        var sep = window.location.search ? '&' : '?';
+        window.location.href = window.location.pathname + window.location.search + sep + 'lang=' + l;
+      }
+    }
+    function wbShow(id){ var el = document.getElementById(id); if(el){ el.classList.remove('hidden'); el.classList.add('flex'); } }
+    function wbHide(id){ var el = document.getElementById(id); if(el){ el.classList.add('hidden'); el.classList.remove('flex'); } }
+    /* 屏幕居中轻提示（替代原生 alert） */
+    function wbToast(msg, type){
+      Swal.fire({
+        toast: true, position: 'top', showConfirmButton: false, timer: 2400, timerProgressBar: true,
+        icon: type || 'info', title: msg
+      });
+    }
+    /* 结果弹窗（居中，操作成功/失败反馈） */
+    function wbResult(msg, type){
+      Swal.fire({ icon: type || 'success', title: msg, confirmButtonText: t('好的'),
+        confirmButtonColor: type === 'error' ? '#ef4444' : '#2563eb' });
+    }
+    /* 居中确认框（替代原生 confirm，返回 Promise<boolean>） */
+    function wbConfirm(title, text, opts){
+      return Swal.fire(Object.assign({
+        title: title, text: text || '', icon: 'question',
+        showCancelButton: true, confirmButtonText: t('确定'), cancelButtonText: t('取消'),
+        reverseButtons: true, confirmButtonColor: '#2563eb'
+      }, opts || {})).then(function(r){ return r.isConfirmed; });
+    }
+  </script>
+  {block name="scripts"}{/block}
+</body>
+</html>

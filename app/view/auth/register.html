@@ -1,0 +1,80 @@
+{extend name="layout/front_layout" /}
+{block name="title"}注册 · {$site_name}{/block}
+
+{block name="main"}
+<div class="mx-auto max-w-md px-4 py-12">
+  <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
+    <div class="text-center mb-7">
+      {if condition="$site_logo"}<img src="{$site_logo}" alt="{$site_name}" class="w-12 h-12 rounded-2xl object-cover shadow inline-block">{else/}<span class="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-orange-500 inline-flex items-center justify-center text-white font-bold text-xl shadow">富</span>{/if}
+      <h1 class="text-xl font-bold text-slate-900 mt-3">{:lang('创建账号')}</h1>
+      <p class="text-sm text-slate-400">{:lang($site_slogan)}</p>
+    </div>
+
+    <form id="regForm">
+      <input type="hidden" name="csrf_token" value="{$csrf_token}">
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-600 mb-1.5">{:lang('用户名')}</label>
+          <input name="username" type="text" required maxlength="20"
+                 class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400">
+          <p id="usernameTip" class="text-xs text-slate-400 mt-1">{:lang('4-20 位中文 / 字母 / 下划线，不可为纯数字')}</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-600 mb-1.5">{:lang('密码')}</label>
+          <input name="password" type="password" required
+                 class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400">
+          <p class="text-xs text-slate-400 mt-1">{:lang('6-32 位，需同时包含字母与数字')}</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-600 mb-1.5">{:lang('确认密码')}</label>
+          <input name="confirm_password" type="password" required
+                 class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-600 mb-1.5">{:lang('手机号')}</label>
+          <input name="phone" type="tel" required maxlength="11" pattern="1[3-9][0-9]{9}"
+                 class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400">
+          <p class="text-xs text-slate-400 mt-1">{:lang('用于账号安全与找回，仅你本人可见')}</p>
+        </div>
+
+        {if condition="$invite_switch eq 'on'"}
+        <div id="inviteWrap">
+          <label class="block text-sm font-medium text-slate-600 mb-1.5">{:lang('邀请码')}</label>
+          <input name="invite_code" type="text"
+                 class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400">
+        </div>
+        {else/}
+        <input type="hidden" name="invite_code" value="">
+        {/if}
+
+        <button type="submit" class="w-full py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 shadow-sm transition">{:lang('注册并登录')}</button>
+      </div>
+    </form>
+
+    <p class="text-center text-sm text-slate-500 mt-6">
+      {:lang('已有账号？')}<a href="/login" class="text-blue-600 font-medium hover:underline">{:lang('去登录')}</a>
+    </p>
+    <p class="text-center text-xs text-slate-300 mt-3">{:lang('注册即代表同意')} <a href="/help/user-agreement" class="text-blue-400 hover:underline">{:lang('《用户协议》')}</a></p>
+  </div>
+</div>
+{/block}
+
+{block name="scripts"}
+{literal}
+<script>
+$('input[name=username]').on('blur', function(){
+  var v = $(this).val().trim();
+  if(!v) return;
+  $.ajax({ url:'/auth/check-username', method:'POST', data:{csrf_token:window.csrfToken, username:v}, dataType:'json' })
+    .done(function(res){ $('#usernameTip').text(res.exists?t('该用户名已被占用'):t('可以使用，4-20 位中文/字母/下划线')).css('color', res.exists?'#ef4444':'#22c55e'); });
+});
+$('#regForm').on('submit', function(e){
+  e.preventDefault();
+  var btn = $(this).find('button[type=submit]'); btn.prop('disabled',true).text(t('注册中...'));
+  $.ajax({ url:'/register', method:'POST', data:$(this).serialize(), dataType:'json' })
+    .done(function(res){ if(res.code===0){ toast(res.msg,'success'); setTimeout(function(){ location.href=res.url||'/profile'; },700); } else { toast(res.msg,'error'); btn.prop('disabled',false).text(t('注册并登录')); } })
+    .fail(function(){ toast(t('网络异常'), 'error'); btn.prop('disabled',false).text(t('注册并登录')); });
+});
+</script>
+{/literal}
+{/block}

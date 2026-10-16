@@ -1,0 +1,43 @@
+{extend name="layout/front_layout" /}
+{block name="title"}{if condition="$mode eq 'following'"}{:lang('我的关注')}{else/}{:lang('我的粉丝')}{/if} · {:lang('个人中心')}{/block}
+
+{block name="main"}
+<div class="mx-auto max-w-6xl px-4 py-6">
+  <div class="flex flex-col sm:flex-row gap-6">
+    <div class="w-full sm:w-56 shrink-0">{include file="profile/_nav"}</div>
+    <div class="flex-1 min-w-0">
+      <div class="flex items-center gap-2 mb-4">
+        {if condition="$mode eq 'following'"}
+        <a href="/profile/following" class="px-3 py-1.5 rounded-full bg-blue-600 text-white text-sm">{:lang('我的关注')}</a>
+        <a href="/profile/followers" class="px-3 py-1.5 rounded-full bg-white text-slate-600 border border-slate-200 text-sm">{:lang('我的粉丝')}</a>
+        {else/}
+        <a href="/profile/following" class="px-3 py-1.5 rounded-full bg-white text-slate-600 border border-slate-200 text-sm">{:lang('我的关注')}</a>
+        <a href="/profile/followers" class="px-3 py-1.5 rounded-full bg-blue-600 text-white text-sm">{:lang('我的粉丝')}</a>
+        {/if}
+      </div>
+
+      {if condition="$users"}
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {foreach $users as $fu}
+        <div class="bg-white rounded-2xl shadow-sm p-4 flex items-center gap-3">
+          <a href="/u/{$fu.id}"><img src="{:avatar_url($fu)}" class="w-12 h-12 rounded-full object-cover"></a>
+          <div class="flex-1 min-w-0">
+            <a href="/u/{$fu.id}" class="font-medium text-slate-800 hover:text-blue-600 truncate block">{$fu.username}</a>
+            <p class="text-xs text-slate-400 truncate">{if condition="$fu.bio"}{$fu.bio}{else/}{:lang('这个人很神秘')}{/if}</p>
+          </div>
+          <div class="flex flex-col items-end gap-1 shrink-0">
+            <span class="text-[11px] text-slate-400">{if condition="$fu.tip_total_amount" GT 0}¥{:format_amount($fu.tip_total_amount)} {:lang('收支持')}{else/}&nbsp;{/if}</span>
+            {if condition="$fu.wechat_qr_url || $fu.alipay_qr_url"}
+            <button onclick="openTip({$fu.id}, '{$fu.username}', '{$fu.wechat_qr_url}', '{$fu.alipay_qr_url}')" class="text-xs text-orange-500 hover:underline">{:lang('打赏')}</button>
+            {/if}
+          </div>
+        </div>
+        {/foreach}
+      </div>
+      {else/}
+      <div class="text-center py-20 text-slate-400"><div class="text-5xl mb-3">👥</div><p>{if condition="$mode eq 'following'"}{:lang('还没有关注任何人')}{/if}{if condition="$mode eq 'followers'"}{:lang('还没有粉丝')}{/if}</p></div>
+      {/if}
+    </div>
+  </div>
+</div>
+{/block}

@@ -1,0 +1,155 @@
+{extend name="admin/layout" /}
+{block name="page_title"}{:lang('广告管理')}{/block}
+
+{block name="main"}
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h3 class="card-title">{:lang('广告位')}</h3>
+    <div class="flex items-center gap-2">
+      <form class="form-inline" method="get" action="/admin/ads">
+        <input type="text" name="kw" value="{$kw}" placeholder="{:lang('搜索标题/广告位')}" class="form-control form-control-sm !w-44">
+        <button class="btn btn-sm btn-primary whitespace-nowrap">搜索</button>
+      </form>
+      <button class="btn btn-sm btn-primary" onclick="openModal(0)">{:lang('新增广告')}</button>
+    </div>
+  </div>
+  <div class="card-body table-responsive p-0">
+    <table class="table table-hover">
+      <thead><tr><th>ID</th><th>{:lang('广告位')}</th><th>{:lang('标题')}</th><th>{:lang('链接')}</th><th>{:lang('图片')}</th><th>{:lang('有效期')}</th><th>{:lang('点击')}</th><th>{:lang('状态')}</th><th>{:lang('操作')}</th></tr></thead>
+      <tbody>
+      {foreach $ads as $a}
+        <tr>
+          <td>{$a.id}</td>
+          <td><code>{$a.slot}</code>{if condition="$a.rec_w"}{$a.rec_w}×{$a.rec_h}{/if}</td>
+          <td>{$a.title}</td>
+          <td><a href="{$a.url}" target="_blank">{if condition="$a.url"}{$a.url}{else/}-{/if}</a></td>
+          <td>{if condition="$a.image"}<img src="/uploads/{$a.image}" width="60" height="40" class="img-thumbnail">{/if}</td>
+          <td><small>{$a.start_at}<br>{$a.end_at}</small></td>
+          <td>{$a.click_count|default=0}</td>
+          <td>{if condition="$a.status eq 1"}<span class="badge badge-success">{:lang('启用')}</span>{else/}<span class="badge badge-secondary">{:lang('停用')}</span>{/if}</td>
+          <td><button class="btn btn-xs btn-info" onclick="openModal({$a.id}, '{$a.slot}', '{$a.title}', '{$a.url}', '{$a.image}', '{$a.start_at}', '{$a.end_at}', {$a.sort}, {$a.status})">编辑</button></td>
+        </tr>
+      {/foreach}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-body">{$pager|raw}</div>
+</div>
+
+<div id="adModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 p-4 overflow-y-auto">
+  <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl my-8">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+      <h3 class="font-bold text-slate-900">{:lang('广告')}</h3>
+      <button type="button" onclick="wbHide('adModal')" class="text-slate-400 hover:text-slate-700 text-xl leading-none">✕</button>
+    </div>
+    <div class="p-5 space-y-4">
+      <input type="hidden" id="adId">
+      <div><label class="block text-sm font-medium text-slate-600 mb-1">{:lang('广告位')}</label>
+        <select id="adSlot" class="form-control" onchange="onSlotChange()">
+          {foreach $slotMeta as $key => $m}
+          <option value="{$key}" data-w="{$m.w}" data-h="{$m.h}">{$m.label}{:lang('（推荐 %s×%s）', [$m.w, $m.h])}</option>
+          {/foreach}
+        </select>
+      </div>
+      <div><label class="block text-sm font-medium text-slate-600 mb-1">{:lang('标题')}</label><input id="adTitle" class="form-control"></div>
+      <div><label class="block text-sm font-medium text-slate-600 mb-1">{:lang('链接 URL')}</label><input id="adUrl" class="form-control" placeholder="{:lang('可填完整外链（含 http(s)://）或站内相对路径（/ 开头），勿填裸域名')}"></div>
+      <div>
+        <label class="block text-sm font-medium text-slate-600 mb-1">{:lang('广告图片')}</label>
+        <input type="file" id="adImageFile" accept="image/*" class="form-control" onchange="uploadAdImage(this)">
+        <input type="hidden" id="adImage">
+        <div id="adImagePreview" class="mt-2"></div>
+        <p id="adSlotTip" class="text-xs text-blue-600 mt-1"></p>
+        <p class="text-xs text-slate-400 mt-1">{:lang('支持 JPG/PNG/WEBP，≤5MB；选择后自动上传并填入路径（也可在下方手动修改路径）')}</p>
+      </div>
+      <div><label class="block text-sm font-medium text-slate-600 mb-1">{:lang('开始 / 结束时间')}</label>
+        <input id="adStart" class="form-control mb-2" placeholder="2026-01-01 00:00:00">
+        <input id="adEnd" class="form-control" placeholder="2026-12-31 23:59:59">
+      </div>
+      <div><label class="block text-sm font-medium text-slate-600 mb-1">{:lang('排序')}</label><input id="adSort" type="number" class="form-control"></div>
+      <div><label class="block text-sm font-medium text-slate-600 mb-1">状态</label><select id="adStatus" class="form-control"><option value="1">{:lang('启用')}</option><option value="0">{:lang('停用')}</option></select></div>
+    </div>
+    <div class="px-5 py-4 bg-slate-50 flex gap-3">
+      <button class="btn btn-default flex-1" onclick="wbHide('adModal')">取消</button>
+      <button class="btn btn-primary flex-1" onclick="save()">保存</button>
+    </div>
+  </div>
+</div>
+{/block}
+
+{block name="scripts"}
+{literal}
+<script>
+function openModal(id, slot, title, url, image, start, end, sort, status){
+  $('#adId').val(id||0); $('#adSlot').val(slot||'square_top'); $('#adTitle').val(title||''); $('#adUrl').val(url||''); $('#adImage').val(image||'');
+  $('#adImagePreview').html(image ? '<img src="/uploads/'+image+'" class="img-thumbnail" style="max-height:90px">' : '');
+  $('#adImageFile').val('');
+  $('#adStart').val(start||''); $('#adEnd').val(end||''); $('#adSort').val(sort||0); $('#adStatus').val(status||1);
+  wbShow('adModal');
+  onSlotChange();
+  if(image) checkImageSize('/uploads/'+image);
+}
+function onSlotChange(){
+  var opt = $('#adSlot').find('option:selected');
+  var w = opt.data('w'), h = opt.data('h');
+  if(w && h){
+    $('#adSlotTip').text(t('推荐尺寸：'))+w+'×'+h+t('（通栏按此比例上传，超出部分会被裁切）');
+    var cur = $('#adImage').val();
+    if(cur) checkImageSize('/uploads/'+cur);
+  }
+}
+function checkImageSize(url){
+  if(!url) return;
+  var img = new Image();
+  img.onload = function(){
+    var w = img.naturalWidth, h = img.naturalHeight;
+    var opt = $('#adSlot').find('option:selected');
+    var rw = +opt.data('w'), rh = +opt.data('h');
+    var tip = t('图片实际尺寸：')+w+'×'+h;
+    if(rw && rh){
+      var ratioW = w/h, ratioR = rw/rh;
+      if(Math.abs(ratioW - ratioR)/ratioR > 0.25 || w < rw*0.5 || h < rh*0.5){
+        tip += t(' ⚠ 与推荐 ')+rw+'×'+rh+t(' 比例/尺寸差异较大，展示时可能被裁切');
+      } else {
+        tip += t(' ✓ 与推荐 ')+rw+'×'+rh+t(' 适配良好');
+      }
+    }
+    $('#adSlotTip').text(tip);
+  };
+  img.onerror = function(){ $('#adSlotTip').text(''); };
+  img.src = url;
+}
+function uploadAdImage(input){
+  if(!input.files || !input.files[0]) return;
+  var fd = new FormData();
+  fd.append('csrf_token', window.csrfToken);
+  fd.append('file', input.files[0]);
+  input.disabled = true;
+  fetch('/admin/ads/upload', { method:'POST', body: fd, headers:{'X-Requested-With':'XMLHttpRequest'} })
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      input.disabled = false;
+      if(res.code !== 0){ wbToast(t('上传失败：') + (res.msg||t('未知错误')), 'error'); return; }
+      $('#adImage').val(res.path);
+      $('#adImagePreview').html('<img src="'+res.url+'" class="img-thumbnail" style="max-height:90px">');
+      checkImageSize(res.url);
+    })
+    .catch(function(e){ input.disabled = false; wbToast(t('上传失败'), 'error'); });
+}
+function save(){
+  var fd = new FormData();
+  fd.append('csrf_token', window.csrfToken);
+  fd.append('id', $('#adId').val());
+  fd.append('slot', $('#adSlot').val());
+  fd.append('title', $('#adTitle').val());
+  fd.append('url', $('#adUrl').val());
+  fd.append('image', $('#adImage').val());
+  fd.append('start_at', $('#adStart').val());
+  fd.append('end_at', $('#adEnd').val());
+  fd.append('sort', $('#adSort').val());
+  fd.append('status', $('#adStatus').val());
+  fetch('/admin/ads/save', { method:'POST', body: fd, headers:{'X-Requested-With':'XMLHttpRequest'} })
+    .then(function(r){ return r.json(); }).then(function(res){ if(res.code===0){ location.reload(); } else wbToast(res.msg, 'error'); });
+}
+</script>
+{/literal}
+{/block}

@@ -1,0 +1,33 @@
+{extend name="admin/layout" /}
+{block name="page_title"}{:lang('邀请码使用记录')}{/block}
+
+{block name="main"}
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h3 class="card-title">{:lang('使用流水（共 %s）', [$total])}</h3>
+    <div class="flex items-center gap-2">
+      <form class="form-inline" method="get" action="/admin/invite-codes/used">
+        <input type="text" name="kw" value="{$kw}" placeholder="{:lang('搜索邀请码/使用用户')}" class="form-control form-control-sm !w-44">
+        <button class="btn btn-sm btn-primary whitespace-nowrap">搜索</button>
+      </form>
+      <a href="/admin/invite-codes" class="btn btn-sm btn-default">{:lang('返回邀请码')}</a>
+    </div>
+  </div>
+  <div class="card-body table-responsive p-0">
+    <table class="table table-hover">
+      <thead><tr><th>ID</th><th>{:lang('邀请码')}</th><th>{:lang('使用用户')}</th><th>{:lang('使用时间')}</th></tr></thead>
+      <tbody>
+      {foreach $logs as $l}
+        <tr>
+          <td>{$l.id}</td>
+          <td><code>{if condition="isset($codes[$l.invite_code_id])"}{$codes[$l.invite_code_id]}{else/}#{$l.invite_code_id}{/if}</code></td>
+          <td>{if condition="isset($users[$l.used_user_id])"}{$users[$l.used_user_id]['username']}{else/}#{$l.used_user_id}{/if}</td>
+          <td>{$l.created_at}</td>
+        </tr>
+      {/foreach}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-body">{$pager|raw}</div>
+</div>
+{/block}

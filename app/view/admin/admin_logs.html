@@ -1,0 +1,32 @@
+{extend name="admin/layout" /}
+{block name="page_title"}{:lang('操作日志')}{/block}
+
+{block name="main"}
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h3 class="card-title">{:lang('管理员操作审计日志（共 %s）', [$total])}</h3>
+    <form class="form-inline" method="get" action="/admin/admin-logs">
+      <input type="text" name="kw" value="{$kw}" placeholder="{:lang('搜索管理员/操作/详情')}" class="form-control form-control-sm !w-44">
+      <button class="btn btn-sm btn-primary whitespace-nowrap">搜索</button>
+    </form>
+  </div>
+  <div class="card-body table-responsive p-0">
+    <table class="table table-hover text-nowrap">
+      <thead><tr><th>ID</th><th>{:lang('管理员')}</th><th>{:lang('操作')}</th><th>{:lang('详情')}</th><th>IP</th><th>{:lang('时间')}</th></tr></thead>
+      <tbody>
+      {foreach $logs as $l}
+        <tr>
+          <td>{$l.id}</td>
+          <td>{if condition="$l.admin_name"}{$l.admin_name}{else/}{:lang('系统')}{/if}</td>
+          <td><code>{$l.action}</code></td>
+          <td>{if condition="$l.detail"}{$l.detail}{else/}-{/if}</td>
+          <td>{if condition="$l.ip"}{$l.ip}{else/}-{/if}</td>
+          <td>{$l.created_at}</td>
+        </tr>
+      {/foreach}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-body">{$pager|raw}</div>
+</div>
+{/block}

@@ -1,0 +1,100 @@
+{extend name="layout/front_layout" /}
+{block name="title"}{$u.username} 的主页 · {$site_name}{/block}
+
+{block name="main"}
+<div class="mx-auto max-w-5xl px-4 py-6">
+  {if condition="$ads.user_top"}
+  {if condition="$ads.user_top.url"}
+  <a href="{$ads.user_top.url}" target="_blank" rel="noopener noreferrer" onclick="trackAdClick({$ads.user_top.id})" class="block mb-6 rounded-2xl overflow-hidden shadow-sm"><img src="/uploads/{$ads.user_top.image}" class="w-full h-[80px] object-cover"></a>
+  {else/}
+  <div class="block mb-6 rounded-2xl overflow-hidden shadow-sm"><img src="/uploads/{$ads.user_top.image}" class="w-full h-[80px] object-cover"></div>
+  {/if}
+  {/if}
+
+  <!-- 个人信息卡 -->
+  <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+    <div class="h-28 bg-gradient-to-r from-blue-500 via-indigo-500 to-orange-400"></div>
+    <div class="px-6 pb-6">
+      <div class="flex flex-col sm:flex-row sm:items-end gap-4 -mt-10">
+        <img src="{:avatar_url($u)}" class="w-24 h-24 rounded-2xl object-cover border-4 border-white shadow-md">
+        <div class="flex-1 min-w-0 pb-1">
+          <div class="flex items-center gap-2">
+            <h1 class="text-xl font-bold text-slate-900">{$u.username}</h1>
+            <span class="text-[11px] font-semibold px-1.5 py-0.5 rounded bg-gradient-to-r from-blue-500 to-indigo-500 text-white">{:level_text($u.level)}</span>
+          </div>
+          <p class="text-sm text-slate-500 mt-1">{if condition="$u.bio"}{$u.bio}{else/}{:lang('这个人很神秘，没有简介')}{/if}</p>
+        </div>
+        <div class="flex items-center gap-2 pb-1">
+          {if condition="!$isSelf && $hasQr"}
+          <button onclick="openTip({$u.id}, '{$u.username}', '{$wx}', '{$ali}')" class="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 text-white text-sm font-semibold hover:shadow-lg transition">🎁 {:lang('打赏')} TA</button>
+          {/if}
+          {if condition="!$isSelf && $uid"}
+          {if condition="$pmFollowRequired && !$following"}
+          <button onclick="requireFollowThenMsg({$u.id}, '{$u.username}')" class="px-4 py-2 rounded-xl bg-amber-100 text-amber-700 text-sm font-medium hover:bg-amber-200 transition" title="{:lang('开启私信关注限制：需先关注对方才能发私信')}">🔒 {:lang('先关注可发消息')}</button>
+          {else/}
+          <button onclick="openMessage({$u.id}, '{$u.username}')" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-50 transition">💬 {:lang('发消息')}</button>
+          {/if}
+          <button id="followBtn" onclick="toggleFollow(this,{$u.id})" class="px-4 py-2 rounded-xl {if condition="$following"}bg-slate-100 text-slate-600 hover:bg-slate-200{else/}bg-blue-600 text-white hover:bg-blue-700{/if} text-sm font-medium transition">{if condition="$following"}{:lang('已关注')}{else/}+ {:lang('关注')}{/if}</button>
+          {elseif condition="$isSelf"}
+          <a href="/profile" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-50">{:lang('进入个人中心')}</a>
+          {/if}
+        </div>
+      </div>
+
+      <!-- 统计 -->
+      <div class="flex items-center gap-6 mt-5 text-sm">
+        <div><span class="font-semibold text-slate-900">{if condition="$u.post_count"}{$u.post_count}{else/}0{/if}</span> <span class="text-slate-400">{:lang('博文')}</span></div>
+        <div><span class="font-semibold text-slate-900">{if condition="$u.follower_count"}{$u.follower_count}{else/}0{/if}</span> <span class="text-slate-400">{:lang('关注者')}</span></div>
+        <div><span class="font-semibold text-slate-900">{if condition="$u.following_count"}{$u.following_count}{else/}0{/if}</span> <span class="text-slate-400">{:lang('关注中')}</span></div>
+        <div><span class="font-semibold text-slate-900">¥{:format_amount($u.tip_total_amount)}</span> <span class="text-slate-400">{:lang('收到支持')}</span></div>
+      </div>
+
+      <!-- 收款码预览 -->
+      {if condition="$hasQr"}
+      <div class="mt-5 flex items-center gap-4 p-4 rounded-2xl bg-slate-50">
+        <div class="flex gap-3">
+          {if condition="$wx"}<div class="text-center"><img src="{$wx}" class="w-20 h-20 object-contain bg-white rounded-lg border border-slate-200"><p class="text-[11px] text-slate-400 mt-1">{:lang('微信')}</p></div>{/if}
+          {if condition="$ali"}<div class="text-center"><img src="{$ali}" class="w-20 h-20 object-contain bg-white rounded-lg border border-slate-200"><p class="text-[11px] text-slate-400 mt-1">{:lang('支付宝')}</p></div>{/if}
+        </div>
+        <p class="text-xs text-slate-500 leading-relaxed">{:lang('以上为')} {$u.username} {:lang('的')}<span class="text-slate-700 font-medium">{if condition="$u.qr_type eq 2"}{:lang('商户')}{/if}{:lang('收款码')}</span>{:lang('，打赏请使用对应 App 扫码，平台不代收资金。')}</p>
+      </div>
+      {else/}
+      <div class="mt-5 p-4 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-800">{:lang('该用户暂未公开收款码，无法进行打赏。')}</div>
+      {/if}
+    </div>
+  </div>
+
+  <!-- 博文列表 -->
+  <h2 class="font-semibold text-slate-900 mt-8 mb-4">TA {:lang('的博文')} <span class="text-slate-400 text-sm font-normal">({$total})</span></h2>
+  {if condition="$posts"}
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+    {foreach $posts as $p}
+    <article class="bg-white rounded-2xl shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition p-5 flex flex-col">
+      <a href="/post/{$p.id}" class="font-semibold text-slate-900 hover:text-blue-600 line-clamp-2 leading-snug">{$p.title}</a>
+      <p class="text-sm text-slate-500 line-clamp-2 mt-2 flex-1">{if condition="$p.summary"}{$p.summary}{else/}{:lang('（无摘要）')}{/if}</p>
+      <div class="flex items-center gap-3 text-xs text-slate-400 mt-3 pt-3 border-t border-slate-50">
+        <span class="px-2 py-0.5 rounded bg-blue-50 text-blue-600">{$p.cat}</span>
+        <span>👁 {:number_format($p.view_count)}</span>
+        <span>💬 {$p.comment_count}</span>
+        <span>❤ {$p.like_count}</span>
+      </div>
+    </article>
+    {/foreach}
+  </div>
+
+  {if condition="$totalPages gt 1"}
+  <div class="flex flex-wrap justify-center items-center gap-1 mt-8 text-sm">
+    {if condition="$page gt 1"}<a href="/u/{$u.id}?page={$prevPage}" class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50">{:lang('上一页')}</a>{/if}
+    {foreach $pages as $i}
+      {if condition="$i eq '...'"}<span class="px-2 py-1.5 text-slate-400">…</span>
+      {elseif condition="$i eq $page"}<span class="px-3 py-1.5 rounded-lg bg-blue-600 text-white">{$i}</span>
+      {else/}<a href="/u/{$u.id}?page={$i}" class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50">{$i}</a>{/if}
+    {/foreach}
+    {if condition="$page lt $totalPages"}<a href="/u/{$u.id}?page={$nextPage}" class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50">{:lang('下一页')}</a>{/if}
+  </div>
+  {/if}
+  {else/}
+  <div class="text-center py-16 text-slate-400"><div class="text-5xl mb-3">📝</div><p>TA {:lang('还没有发布博文')}</p></div>
+  {/if}
+</div>
+{/block}

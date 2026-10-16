@@ -1,0 +1,25 @@
+{// 个人中心侧边导航，依赖 $active / $u}
+<div class="bg-white rounded-2xl shadow-sm p-4">
+  <div class="flex items-center gap-3 px-2 pb-4 mb-3 border-b border-slate-100">
+    <img src="{:avatar_url($u)}" class="w-11 h-11 rounded-full object-cover">
+    <div class="min-w-0">
+      <p class="text-sm font-semibold text-slate-900 truncate">{$u.username}</p>
+      <p class="text-[11px] text-slate-400 truncate">{if condition="$u.bio"}{$u.bio}{else/}{:lang('这个人很神秘')}{/if}</p>
+    </div>
+  </div>
+  <nav class="space-y-1 text-sm">
+    <a href="/profile" class="flex items-center gap-2 px-3 py-2 rounded-xl {if condition="$active eq 'index'"}bg-blue-50 text-blue-600 font-medium{else/}text-slate-600 hover:bg-slate-50{/if}">🏠 {:lang('概览')}</a>
+    <a href="/profile/received" class="flex items-center gap-2 px-3 py-2 rounded-xl {if condition="$active eq 'received'"}bg-blue-50 text-blue-600 font-medium{else/}text-slate-600 hover:bg-slate-50{/if}">🎁 {:lang('收到的打赏')}</a>
+    <a href="/profile/sent" class="flex items-center gap-2 px-3 py-2 rounded-xl {if condition="$active eq 'sent'"}bg-blue-50 text-blue-600 font-medium{else/}text-slate-600 hover:bg-slate-50{/if}">💸 {:lang('发出的打赏')}</a>
+    <a href="/profile/posts" class="flex items-center gap-2 px-3 py-2 rounded-xl {if condition="$active eq 'posts'"}bg-blue-50 text-blue-600 font-medium{else/}text-slate-600 hover:bg-slate-50{/if}">📝 {:lang('我的博文')}</a>
+    <a href="/profile/comments" class="flex items-center gap-2 px-3 py-2 rounded-xl {if condition="$active eq 'comments'"}bg-blue-50 text-blue-600 font-medium{else/}text-slate-600 hover:bg-slate-50{/if}">💬 {:lang('我的评论')}</a>
+    <a href="/profile/favorites" class="flex items-center gap-2 px-3 py-2 rounded-xl {if condition="$active eq 'favorites'"}bg-blue-50 text-blue-600 font-medium{else/}text-slate-600 hover:bg-slate-50{/if}">⭐ {:lang('我的收藏')}</a>
+    <a href="/profile/following" class="flex items-center gap-2 px-3 py-2 rounded-xl {if condition="$active eq 'following'"}bg-blue-50 text-blue-600 font-medium{else/}text-slate-600 hover:bg-slate-50{/if}">👥 {:lang('我的关注')}</a>
+    <a href="/profile/followers" class="flex items-center gap-2 px-3 py-2 rounded-xl {if condition="$active eq 'followers'"}bg-blue-50 text-blue-600 font-medium{else/}text-slate-600 hover:bg-slate-50{/if}">👤 {:lang('我的粉丝')}</a>
+    <a href="/profile/notifications" class="flex items-center gap-2 px-3 py-2 rounded-xl {if condition="$active eq 'notifications'"}bg-blue-50 text-blue-600 font-medium{else/}text-slate-600 hover:bg-slate-50{/if}">🔔 {:lang('消息通知')}</a>
+    <a href="/profile/invite" class="flex items-center gap-2 px-3 py-2 rounded-xl {if condition="$active eq 'invite'"}bg-blue-50 text-blue-600 font-medium{else/}text-slate-600 hover:bg-slate-50{/if}">🎯 {:lang('积分 & 邀请')}</a>
+    <a href="/profile/points-logs" class="flex items-center gap-2 px-3 py-2 rounded-xl {if condition="$active eq 'points'"}bg-blue-50 text-blue-600 font-medium{else/}text-slate-600 hover:bg-slate-50{/if}">📊 {:lang('积分明细')}</a>
+    <a href="/profile/edit" class="flex items-center gap-2 px-3 py-2 rounded-xl {if condition="$active eq 'edit'"}bg-blue-50 text-blue-600 font-medium{else/}text-slate-600 hover:bg-slate-50{/if}">⚙️ {:lang('资料设置')}</a>
+    <a href="/profile/password" class="flex items-center gap-2 px-3 py-2 rounded-xl {if condition="$active eq 'password'"}bg-blue-50 text-blue-600 font-medium{else/}text-slate-600 hover:bg-slate-50{/if}">🔑 {:lang('修改密码')}</a>
+  </nav>
+</div>

@@ -1,0 +1,68 @@
+{extend name="admin/layout" /}
+{block name="page_title"}{:lang('用户详情')} #{$u.id}{/block}
+
+{block name="main"}
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+  <div>
+    <div class="card card-primary card-outline">
+      <div class="card-body box-profile text-center">
+        <img src="{:avatar_url($u)}" class="rounded-circle profile-user-img img-fluid" width="96" height="96">
+        <h3 class="mt-2 mb-0">{$u.username}</h3>
+        <p class="text-muted">{if condition="$u.bio"}{$u.bio}{else/}{:lang('（无简介）')}{/if}</p>
+        <ul class="list-group list-group-unbordered mb-3">
+          <li class="list-group-item"><b>{:lang('收款总额')}</b><span class="float-right">¥{:format_amount($u.tip_total_amount)}</span></li>
+          <li class="list-group-item"><b>{:lang('博文数')}</b><span class="float-right">{$u.post_count}</span></li>
+          <li class="list-group-item"><b>{:lang('粉丝 / 关注')}</b><span class="float-right">{$u.follower_count} / {$u.following_count}</span></li>
+          <li class="list-group-item"><b>微信码</b><span class="float-right"><span class="{:audit_status_badge($u.wechat_qr_status)} badge">{:qr_status_text($u.wechat_qr_status)}</span></span></li>
+          <li class="list-group-item"><b>支付宝码</b><span class="float-right"><span class="{:audit_status_badge($u.alipay_qr_status)} badge">{:qr_status_text($u.alipay_qr_status)}</span></span></li>
+          <li class="list-group-item"><b>{:lang('风控提醒')}</b><span class="float-right">{$u.risk_remind_count} {:lang('次')}</span></li>
+        </ul>
+        <a href="/u/{$u.id}" target="_blank" class="btn btn-primary btn-block"><b>{:lang('查看前台主页')}</b></a>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><h3 class="card-title">{:lang('收款码')}</h3></div>
+    <div class="card-body">
+      <div class="flex flex-wrap gap-6">
+        <div class="text-center">
+          <p class="text-sm text-slate-500 mb-2">{:lang('微信码')}（{:qr_status_text($u.wechat_qr_status)}）</p>
+          {if condition="$u.wechat_qr"}<img src="/uploads/{$u.wechat_qr}" width="160" height="160" class="img-thumbnail">{else/}<span class="text-slate-400 text-sm">{:lang('未上传')}</span>{/if}
+        </div>
+        <div class="text-center">
+          <p class="text-sm text-slate-500 mb-2">{:lang('支付宝码')}（{:qr_status_text($u.alipay_qr_status)}）</p>
+          {if condition="$u.alipay_qr"}<img src="/uploads/{$u.alipay_qr}" width="160" height="160" class="img-thumbnail">{else/}<span class="text-slate-400 text-sm">{:lang('未上传')}</span>{/if}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="md:col-span-2 space-y-4">
+    <div class="card">
+      <div class="card-header"><h3 class="card-title">{:lang('收到打赏')}</h3></div>
+      <div class="card-body table-responsive p-0">
+        <table class="table table-sm">
+          <thead><tr><th>ID</th><th>付款方</th><th>金额</th><th>渠道</th><th>状态</th><th>时间</th></tr></thead>
+          <tbody>
+          {foreach $tips as $t}
+            <tr><td>{$t.id}</td><td>{if condition="$t.from_user_id"}{$t.from_user_id}{else/}游客{/if}</td><td>¥{:format_amount($t.amount)}</td><td>{:pay_type_text($t.pay_type)}</td><td><span class="{:audit_status_badge($t.status)} badge">{:tip_status_text($t.status)}</span></td><td>{$t.created_at}</td></tr>
+          {/foreach}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3 class="card-title">{:lang('博文')}</h3></div>
+      <div class="card-body table-responsive p-0">
+        <table class="table table-sm">
+          <thead><tr><th>ID</th><th>标题</th><th>状态</th><th>浏览</th><th>时间</th></tr></thead>
+          <tbody>
+          {foreach $posts as $p}
+            <tr><td>{$p.id}</td><td><a href="/post/{$p.id}" target="_blank">{$p.title}</a></td><td><span class="{:audit_status_badge($p.status)} badge">{:post_status_text($p.status)}</span></td><td>{$p.view_count}</td><td>{$p.created_at}</td></tr>
+          {/foreach}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{/block}

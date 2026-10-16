@@ -1,0 +1,34 @@
+{extend name="layout/front_layout" /}
+{block name="title"}{:lang('用户协议')} · {$site_name}{/block}
+
+{block name="main"}
+<div class="mx-auto max-w-3xl px-4 py-8">
+  <div class="bg-white rounded-2xl shadow-sm p-8">
+    <h1 class="text-2xl font-bold text-slate-900">{:lang('用户协议')}</h1>
+    <p class="text-sm text-slate-400 mt-1">{:lang('生效日期：2026-01-01（示例文本）')}</p>
+
+    <div class="mt-6 space-y-5 text-sm text-slate-700 leading-7">
+      <section>
+        <h2 class="font-semibold text-slate-900 text-base">{:lang('一、服务说明')}</h2>
+        <p>{:lang('造富计划（以下简称"本平台"）是一个内容社区平台，用户可注册账号、发布图文内容、相互关注，并通过展示个人 / 商户收款码接受他人的自愿打赏支持。本平台仅提供信息展示与互动功能，')}<strong>{:lang('不提供资金托管、代收、结算等金融服务。')}</strong></p>
+      </section>
+      <section>
+        <h2 class="font-semibold text-slate-900 text-base">{:lang('二、账户与实名')}</h2>
+        <p>{:lang('你需对账户安全负责。禁止注册多个违规账号、冒用他人身份或从事任何违反法律法规的活动。平台保留对违规账号进行限制或封禁的权利。')}</p>
+      </section>
+      <section>
+        <h2 class="font-semibold text-slate-900 text-base">{:lang('三、打赏与资金')}</h2>
+        <p>{:lang('打赏是基于收款码的点对点转账行为，由付款方自行通过微信 / 支付宝向收款方转账。平台不参与资金流转，亦不对转账结果、金额争议承担责任。如发生未到账、错付等情况，请通过平台内的纠纷申诉通道或支付平台官方渠道解决。')}</p>
+      </section>
+      <section>
+        <h2 class="font-semibold text-slate-900 text-base">{:lang('四、内容规范')}</h2>
+        <p>{:lang('你发布的内容须合法、真实、友善，不得包含违法、暴力、色情、诈骗、侵权或骚扰信息。平台有权对违规内容进行下架、限制展示或删除，并记录在案。')}</p>
+      </section>
+      <section>
+        <h2 class="font-semibold text-slate-900 text-base">{:lang('五、免责声明')}</h2>
+        <p>{:lang('本平台按"现状"提供服务，对不可抗力、第三方支付平台规则变更、网络故障等导致的服务中断或资金异常不承担责任。用户应自行评估参与打赏与内容分享的风险。')}</p>
+      </section>
+    </div>
+  </div>
+</div>
+{/block}

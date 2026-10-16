@@ -1,0 +1,73 @@
+{extend name="admin/layout" /}
+{block name="page_title"}{:lang('站内通知')}{/block}
+
+{block name="main"}
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+  <div class="md:col-span-2">
+    <div class="card">
+      <div class="card-header"><h3 class="card-title">{:lang('发送通知 / 公告')}</h3></div>
+      <div class="card-body space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-600 mb-1">{:lang('发送范围')}</label>
+          <select id="nScope" class="form-control" onchange="toggleSingle()">
+            <option value="all">{:lang('全站用户（在线 + 离线）')}</option>
+            <option value="single">{:lang('指定用户')}</option>
+          </select>
+        </div>
+        <div id="nSingleWrap" class="hidden">
+          <label class="block text-sm font-medium text-slate-600 mb-1">{:lang('接收用户名')}</label>
+          <input id="nUser" class="form-control" placeholder="{:lang('精确用户名')}">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-600 mb-1">{:lang('标题')}</label>
+          <input id="nTitle" class="form-control" placeholder="{:lang('如：系统维护通知')}">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-600 mb-1">{:lang('内容')}</label>
+          <textarea id="nContent" class="form-control" rows="4" placeholder="{:lang('通知正文')}"></textarea>
+        </div>
+        <button class="btn btn-primary" onclick="send()">{:lang('发送')}</button>
+        <p class="text-xs text-slate-400">{:lang('提示：全站群发会向所有「正常状态」用户各写入一条站内信，用户将在前台「消息通知」中看到。')}</p>
+      </div>
+    </div>
+  </div>
+  <div>
+    <div class="card">
+      <div class="card-header"><h3 class="card-title">{:lang('说明')}</h3></div>
+      <div class="card-body text-sm text-slate-600 leading-relaxed">
+        <p>{:lang('· 通知类型标识为「公告 / 系统通知」。')}</p>
+        <p>{:lang('· 前台用户在')}<a href="/profile/notifications" target="_blank" class="text-blue-600">{:lang('消息通知')}</a>{:lang('中查看。')}</p>
+        <p>{:lang('· 群发量较大时按 500/批写入，请耐心等待返回。')}</p>
+      </div>
+    </div>
+  </div>
+</div>
+{/block}
+
+{block name="scripts"}
+{literal}
+<script>
+function toggleSingle(){
+  var v = $('#nScope').val();
+  if(v==='single'){ $('#nSingleWrap').removeClass('hidden'); } else { $('#nSingleWrap').addClass('hidden'); }
+}
+function send(){
+  var scope = $('#nScope').val();
+  var title = $('#nTitle').val().trim();
+  var content = $('#nContent').val().trim();
+  if(!title || !content){ wbToast(t('标题和内容必填'), 'warning'); return; }
+  wbConfirm(t('确认发送？')).then(function(ok){
+    if(!ok) return;
+    var fd = new FormData();
+    fd.append('csrf_token', window.csrfToken);
+    fd.append('scope', scope);
+    fd.append('username', $('#nUser').val().trim());
+    fd.append('title', title);
+    fd.append('content', content);
+    fetch('/admin/notifications/send', { method:'POST', body: fd, headers:{'X-Requested-With':'XMLHttpRequest'} })
+      .then(function(r){ return r.json(); }).then(function(res){ wbResult(res.msg, res.code===0 ? 'success' : 'error'); if(res.code===0){ setTimeout(function(){ location.reload(); }, 1200); } });
+  });
+}
+</script>
+{/literal}
+{/block}

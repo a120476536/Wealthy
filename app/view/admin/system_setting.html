@@ -1,0 +1,87 @@
+{extend name="admin/layout" /}
+{block name="page_title"}{:lang('系统设置')}{/block}
+
+{block name="main"}
+<div class="card">
+  <div class="card-header"><h3 class="card-title">{:lang('站点与风控参数')}</h3></div>
+  <div class="card-body">
+    {if condition="$settings"}
+    <div class="form-group row">
+      {foreach $settings as $s}
+      <label class="col-sm-3 col-form-label">{:lang($s.setting_key)}</label>
+      <div class="col-sm-9 mb-3">
+        {if condition="$s.setting_key eq 'qr_audit_mode'"}
+        <select class="form-control setting-input" data-key="{$s.setting_key}">
+          <option value="manual"{if condition="$s.setting_value eq 'manual'"} selected{/if}>{:lang('人工审核（需管理员手动审核）')}</option>
+          <option value="auto"{if condition="$s.setting_value eq 'auto'"} selected{/if}>{:lang('自动审核（超时自动通过）')}</option>
+        </select>
+        {elseif condition="$s.setting_key eq 'site_logo'"}
+        <input id="siteLogoInput" class="form-control setting-input" data-key="{$s.setting_key}" value="{$s.setting_value}" oninput="logoPreview(this.value)">
+        <div class="mt-2 flex items-center gap-2">
+          <button type="button" class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('siteLogoFile').click()">{:lang('选择图片')}</button>
+          <input id="siteLogoFile" type="file" accept="image/*" class="d-none" onchange="uploadSiteLogo(this)">
+          <span class="text-muted small">{:lang('或填写完整外链 / 站内相对路径')}</span>
+        </div>
+        <div id="logoPreviewWrap" class="mt-2">{if condition="$s.setting_value"}<img src="{$s.setting_value}" class="w-10 h-10 rounded-xl object-cover" alt="logo">{/if}</div>
+        {elseif condition="$s.setting_value eq 'on' || $s.setting_value eq 'off'"}
+        <select class="form-control setting-input" data-key="{$s.setting_key}">
+          {if condition="$s.setting_value eq 'off'"}
+          <option value="off" selected>{:lang('off（关闭）')}</option>
+          <option value="on">{:lang('on（开启）')}</option>
+          {else/}
+          <option value="off">{:lang('off（关闭）')}</option>
+          <option value="on" selected>{:lang('on（开启）')}</option>
+          {/if}
+        </select>
+        {else/}
+        <input class="form-control setting-input" data-key="{$s.setting_key}" value="{$s.setting_value}">
+        {/if}
+        {if condition="$s.remark"}<small class="text-muted">{:lang($s.remark)}</small>{/if}
+      </div>
+      {/foreach}
+    </div>
+    <button class="btn btn-primary" onclick="save()">{:lang('保存设置')}</button>
+    {else/}
+    <p class="text-muted">{:lang('暂无设置项')}</p>
+    {/if}
+  </div>
+</div>
+{/block}
+
+{block name="scripts"}
+{literal}
+<script>
+function logoPreview(v){
+  var w = document.getElementById('logoPreviewWrap');
+  w.innerHTML = v ? '<img src="'+v+'" class="w-10 h-10 rounded-xl object-cover" onerror="this.remove()" alt="logo">' : '';
+}
+function uploadSiteLogo(input){
+  if(!input.files || !input.files[0]){ return; }
+  var fd = new FormData();
+  fd.append('csrf_token', window.csrfToken);
+  fd.append('file', input.files[0]);
+  fetch('/admin/site-logo/upload', { method:'POST', body: fd, headers:{'X-Requested-With':'XMLHttpRequest'} })
+    .then(function(r){ return r.json(); }).then(function(res){
+      if(res.code === 0){
+        var inp = document.getElementById('siteLogoInput');
+        inp.value = res.url;
+        logoPreview(res.url);
+        wbResult(res.msg || 'ok', 'success');
+      } else {
+        wbResult(res.msg || 'fail', 'error');
+      }
+      input.value = '';
+    }).catch(function(){ wbResult(t('上传失败'), 'error'); input.value = ''; });
+}
+function save(){
+  var items = {};
+  $('.setting-input').each(function(){ items[$(this).data('key')] = $(this).val(); });
+  var fd = new FormData();
+  fd.append('csrf_token', window.csrfToken);
+  for(var k in items){ fd.append('items['+k+']', items[k]); }
+  fetch('/admin/system-setting/save', { method:'POST', body: fd, headers:{'X-Requested-With':'XMLHttpRequest'} })
+    .then(function(r){ return r.json(); }).then(function(res){ wbResult(res.msg, res.code===0 ? 'success' : 'error'); });
+}
+</script>
+{/literal}
+{/block}

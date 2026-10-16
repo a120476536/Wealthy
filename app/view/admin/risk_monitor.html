@@ -1,0 +1,57 @@
+{extend name="admin/layout" /}
+{block name="page_title"}{:lang('风控监控')}{/block}
+
+{block name="main"}
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h3 class="card-title">{:lang('重点监控用户（高频收款 / 被提醒用户，共 %s）', [$total])}</h3>
+    <form class="form-inline" method="get" action="/admin/risk-monitor">
+      <input type="text" name="kw" value="{$kw}" placeholder="{:lang('搜索用户名/昵称/手机号')}" class="form-control form-control-sm !w-44">
+      <button class="btn btn-sm btn-primary whitespace-nowrap">搜索</button>
+    </form>
+  </div>
+  <div class="card-body table-responsive p-0">
+    <table class="table table-hover">
+      <thead><tr><th>ID</th><th>{:lang('用户')}</th><th>{:lang('收款总额')}</th><th>{:lang('微信码')}</th><th>{:lang('支付宝码')}</th><th>{:lang('风控提醒')}</th><th>{:lang('上次提醒')}</th><th>{:lang('操作')}</th></tr></thead>
+      <tbody>
+      {foreach $users as $u}
+        <tr>
+          <td>{$u.id}</td>
+          <td>{$u.username}</td>
+          <td>¥{:format_amount($u.tip_total_amount)}</td>
+          <td><span class="{:audit_status_badge($u.wechat_qr_status)} badge">{:qr_status_text($u.wechat_qr_status)}</span></td>
+          <td><span class="{:audit_status_badge($u.alipay_qr_status)} badge">{:qr_status_text($u.alipay_qr_status)}</span></td>
+          <td><span class="badge badge-warning">{$u.risk_remind_count} {:lang('次')}</span></td>
+          <td>{if condition="$u.risk_remind_last_at"}{$u.risk_remind_last_at}{else/}-{/if}</td>
+          <td>
+            <button class="btn btn-xs btn-warning" onclick="remind({$u.id})">{:lang('提醒')}</button>
+            <button class="btn btn-xs btn-success" onclick="markMerchant({$u.id})">{:lang('标记商户')}</button>
+          </td>
+        </tr>
+      {/foreach}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-body">{$pager|raw}</div>
+</div>
+{/block}
+
+{block name="scripts"}
+{literal}
+<script>
+function remind(id){
+  var fd = new FormData(); fd.append('csrf_token', window.csrfToken); fd.append('id', id);
+  fetch('/admin/risk-monitor/remind', { method:'POST', body: fd, headers:{'X-Requested-With':'XMLHttpRequest'} })
+    .then(function(r){ return r.json(); }).then(function(res){ if(res.code===0){ location.reload(); } else wbToast(res.msg, 'error'); });
+}
+function markMerchant(id){
+  wbConfirm(t('标记为已认证商户？')).then(function(ok){
+    if(!ok) return;
+    var fd = new FormData(); fd.append('csrf_token', window.csrfToken); fd.append('id', id);
+    fetch('/admin/risk-monitor/mark-merchant', { method:'POST', body: fd, headers:{'X-Requested-With':'XMLHttpRequest'} })
+      .then(function(r){ return r.json(); }).then(function(res){ if(res.code===0){ location.reload(); } else wbToast(res.msg, 'error'); });
+  });
+}
+</script>
+{/literal}
+{/block}

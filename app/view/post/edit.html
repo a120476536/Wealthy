@@ -1,0 +1,237 @@
+{extend name="layout/front_layout" /}
+{block name="title"}{if condition="$isEdit"}{:lang('编辑博文')}{else/}{:lang('创作博文')}{/if} · {$site_name}{/block}
+
+{block name="main"}
+<div class="mx-auto max-w-4xl px-4 py-6">
+  <div class="bg-white rounded-2xl shadow-sm p-6">
+    <h1 class="text-xl font-bold text-slate-900 mb-5">{if condition="$isEdit"}{:lang('编辑博文')}{else/}{:lang('创作博文')}{/if}</h1>
+
+    <div class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-slate-600 mb-1.5">{:lang('标题')}</label>
+        <input id="title" type="text" maxlength="100" value="{if condition="$post"}{$post.title}{/if}" placeholder="{:lang('给文章起个好标题（2-100字）')}" class="w-full px-3 py-2.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-200">
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-600 mb-1.5">{:lang('分类')} <span class="text-red-400">*</span></label>
+          <select id="category_id" class="w-full px-3 py-2.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-200 bg-white">
+            <option value="0">{:lang('请选择分类')}</option>
+            {foreach $categories as $c}
+            <option value="{$c.id}" {if condition="$post&&$post.category_id eq $c.id"}selected{/if}>{$c.name}</option>
+            {/foreach}
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-600 mb-1.5">{:lang('标签（最多5个，逗号分隔）')}</label>
+          <input id="tags" type="text" value="{if condition="$post"}{$post.tags}{/if}" placeholder="{:lang('如：分享,经验,副业')}" class="w-full px-3 py-2.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-200">
+        </div>
+      </div>
+
+      <div>
+        <div class="flex items-center justify-between mb-1.5">
+          <label class="block text-sm font-medium text-slate-600">{:lang('正文')}</label>
+          <button type="button" onclick="openMdModal()" class="text-xs px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200">📥 {:lang('从 Markdown 导入')}</button>
+        </div>
+        <div class="border border-slate-200 rounded-xl overflow-hidden">
+          <div id="toolbar" class="border-b border-slate-100"></div>
+          <div id="editor" class="min-h-[320px]"></div>
+        </div>
+        <p class="text-xs text-slate-400 mt-1.5">{:lang('支持富文本编辑，图片将自动上传；也可一键从 Markdown 导入（含图片本地化）。')}</p>
+      </div>
+
+      <div class="flex items-center justify-end gap-3 pt-2">
+        <button onclick="savePos'draft'" class="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-slate-50">{:lang('保存草稿')}</button>
+        <button onclick="savePos'publish'" class="px-5 py-2.5 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 shadow-sm">{if condition="$isEdit"}{:lang('保存修改')}{else/}{:lang('发布')}{/if}</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Markdown 导入弹窗 -->
+  <div id="mdModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4">
+    <div class="bg-white w-full max-w-2xl rounded-2xl p-6">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-lg font-bold text-slate-900">{:lang('从 Markdown 导入')}</h3>
+        <button type="button" onclick="closeMdModal()" class="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
+      </div>
+      <p class="text-xs text-slate-400 mb-2">{:lang('粘贴 .md 内容（或选择 .md 文件），系统会自动转换为富文本并填充到编辑器。图片支持两种方式带到本站：外链图自动下载；')}<b>{:lang('本地相对路径引用的图（如 images/foo.png）请在此选择对应图片文件。')}</b></p>
+      <textarea id="mdInput" rows="10" placeholder="在此粘贴 Markdown 文本，例如：&#10;# 标题&#10;正文段落……&#10;![图片](images/foo.png)" class="w-full px-3 py-2.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-200 font-mono"></textarea>
+      <div class="flex items-center justify-between mt-3 gap-3 flex-wrap">
+        <label class="flex items-center gap-2 text-sm text-slate-600">
+          <input id="mdLocalize" type="checkbox" checked class="rounded">
+          {:lang('外链图片也下载到本站')}
+        </label>
+        <div class="flex items-center gap-3 flex-wrap">
+          <input id="mdFile" type="file" accept=".md,.markdown,.txt" class="text-xs text-slate-500" title="{:lang('选择 .md 文件（可选，自动读入上方文本框）')}">
+          <label class="text-xs text-slate-500">{:lang('本地图片：')}
+            <input id="mdImages" type="file" accept="image/*" multiple class="text-xs align-middle">
+          </label>
+        </div>
+      </div>
+      <p class="text-xs text-slate-400 mt-1.5">{:lang('本地图片按')}<b>{:lang('文件名')}</b>{:lang('匹配 md 中的引用（images/foo.png 匹配 foo.png）；未选择对应文件的本地图片将不会被导入。')}</p>
+      <div class="flex justify-end gap-3 mt-4">
+        <button type="button" onclick="closeMdModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50">{:lang('取消')}</button>
+        <button id="mdImportBtn" type="button" onclick="doMdImport()" class="px-4 py-2 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700">{:lang('导入并填充')}</button>
+      </div>
+    </div>
+  </div>
+{/block}
+
+{block name="scripts"}
+<script>
+  // 初始内容（非 literal，供 JS 读取）
+  var initialHtml = {:json_encode($post['content'] ?? '')};
+  var saveUrl = '{if condition="$isEdit"}/post/{$post.id}/edit{else/}/post/create{/if}';
+</script>
+{literal}
+<script>
+  var editor = null;
+  $(function () {
+    var E = window.wangEditor;
+    var editorConfig = {
+      placeholder: t('分享你的故事、经验或见解……'),
+      MENU_CONF: {},
+      onChange: function () {}
+    };
+    editorConfig.MENU_CONF['uploadImage'] = {
+      maxFileSize: 5 * 1024 * 1024, // 友好预检，与服务器上限一致；真正压缩在服务端
+      customUpload: function (file, insertFn) {
+        var fd = new FormData();
+        fd.append('file', file);
+        fetch('/upload/image', { method: 'POST', body: fd, headers: { 'X-CSRF-TOKEN': window.csrfToken } })
+          .then(function (r) { return r.text(); }).then(function (url) {
+            if (url && url.indexOf('/uploads/') === 0) insertFn(url, '', '');
+            else { toast(t('图片上传失败'), 'error'); }
+          }).catch(function () { toast(t('图片上传失败'), 'error'); });
+      }
+    };
+    editor = E.createEditor({
+      selector: '#editor',
+      html: initialHtml,
+      config: editorConfig,
+      mode: 'default'
+    });
+    E.createToolbar({
+      editor: editor,
+      selector: '#toolbar',
+      mode: 'default'
+    });
+  });
+
+  function savePost(action) {
+    var title = ($('#title').val() || '').trim();
+    var content = editor ? editor.getHtml() : '';
+    var catId = $('#category_id').val();
+    var tags = ($('#tags').val() || '').trim();
+    if (title.length < 2) { toast(t('标题至少 2 字'), 'error'); return; }
+    if (catId == 0) { toast(t('请选择分类'), 'error'); return; }
+    if (action === 'publish' && editor.getText().trim().length < 10) { toast(t('正文至少 10 字'), 'error'); return; }
+    var fd = new FormData();
+    fd.append('csrf_token', window.csrfToken);
+    fd.append('title', title);
+    fd.append('content', content);
+    fd.append('category_id', catId);
+    fd.append('tags', tags);
+    fd.append('action', action);
+    fetch(saveUrl, { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      .then(function (r) { return r.json(); }).then(function (res) {
+        if (res.code === 0) {
+          toast(res.msg || t('保存成功'), 'success');
+          setTimeout(function () { location.href = res.url; }, 600);
+        } else {
+          toast(res.msg || t('保存失败'), 'error');
+        }
+      }).catch(function () { toast(t('网络异常'), 'error'); });
+  }
+</script>
+{/literal}
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+  function openMdModal() {
+    var m = document.getElementById('mdModal');
+    m.classList.remove('hidden');
+    m.classList.add('flex');
+  }
+  function closeMdModal() {
+    var m = document.getElementById('mdModal');
+    m.classList.add('hidden');
+    m.classList.remove('flex');
+  }
+  document.getElementById('mdFile').addEventListener('change', function () {
+    var f = this.files[0];
+    if (!f) return;
+    var r = new FileReader();
+    r.onload = function (e) { document.getElementById('mdInput').value = e.target.result; };
+    r.readAsText(f);
+  });
+  function doMdImport() {
+    var md = document.getElementById('mdInput').value || '';
+    if (md.trim().length < 1) { toast(t('请先粘贴或选择 Markdown 内容'), 'error'); return; }
+    // 提取首个一级标题作为建议标题
+    var title = '';
+    var lines = md.split(/\r?\n/);
+    for (var i = 0; i < lines.length; i++) {
+      var mm = lines[i].match(/^\s*#\s+(.+)$/);
+      if (mm) { title = mm[1].trim(); break; }
+    }
+    var html;
+    if (window.marked && typeof marked.parse === 'function') {
+      html = marked.parse(md);
+    } else {
+      html = '<p>' + md.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/\n/g, '<br>') + '</p>';
+    }
+    // 收集本地（非 http(s) / 非本站 / 非 data:）图片，按 basename 匹配用户选择的文件
+    var imgFiles = document.getElementById('mdImages').files || [];
+    var byName = {};
+    for (var f = 0; f < imgFiles.length; f++) { byName[imgFiles[f].name] = imgFiles[f]; }
+    var localImgs = [];
+    var seenLocal = {};
+    var re = /<img\b[^>]*src=["']([^"']+)["']/gi, m2;
+    while ((m2 = re.exec(html)) !== null) {
+      var s = m2[1];
+      if (/^(https?:|\/|data:)/i.test(s)) continue; // 远程 / 本站 / data 不动
+      if (!seenLocal[s]) { seenLocal[s] = true; localImgs.push(s); }
+    }
+    var meta = [], fd = new FormData();
+    fd.append('html', html);
+    fd.append('localize', document.getElementById('mdLocalize').checked ? 1 : 0);
+    var matched = 0;
+    for (var k = 0; k < localImgs.length; k++) {
+      var src = localImgs[k];
+      var base = src.split('/').pop().split('\\').pop();
+      var file = byName[base];
+      if (!file) continue;
+      var field = 'up' + matched;
+      fd.append(field, file);
+      meta.push({ src: src, field: field });
+      matched++;
+    }
+    fd.append('img_meta', JSON.stringify(meta));
+    var unmatched = localImgs.length - matched;
+
+    var btn = document.getElementById('mdImportBtn');
+    btn.disabled = true; btn.textContent = t('导入中…');
+    fetch('/post/md-import', {
+      method: 'POST',
+      headers: { 'X-CSRF-TOKEN': window.csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
+      body: fd
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (res) {
+        btn.disabled = false; btn.textContent = t('导入并填充');
+        if (res.code !== 0) { toast(res.msg || t('导入失败'), 'error'); return; }
+        if (editor && typeof editor.setHtml === 'function') { editor.setHtml(res.html || ''); }
+        if (title && !document.getElementById('title').value) { document.getElementById('title').value = title; }
+        closeMdModal();
+        var msg = t('已导入到编辑器');
+        if (res.local) { msg += t('，本地图片 ') + res.local + t(' 张已上传'); }
+        if (res.localized) { msg += t('，外链图片 ') + res.localized + t(' 张'); }
+        if (unmatched > 0) { msg += '，' + unmatched + t(' 张本地图片未选对应文件'); }
+        else if (res.failed) { msg += '，' + res.failed + t(' 张图片未能导入'); }
+        toast(msg, 'success');
+      })
+      .catch(function () { btn.disabled = false; btn.textContent = t('导入并填充'); toast(t('网络异常'), 'error'); });
+  }
+</script>
+{/block}

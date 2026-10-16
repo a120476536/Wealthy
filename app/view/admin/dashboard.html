@@ -1,0 +1,56 @@
+{extend name="admin/layout" /}
+{block name="page_title"}{:lang('仪表盘')}{/block}
+
+{block name="main"}
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+  <div><div class="small-box bg-blue-500"><div class="inner"><h3>{$stats.users}</h3><p>{:lang('注册用户')}</p></div><div class="icon"><i class="fas fa-users"></i></div><a href="/admin/users" class="small-box-footer">{:lang('查看')} <i class="fas fa-arrow-circle-right"></i></a></div></div>
+  <div><div class="small-box bg-green-500"><div class="inner"><h3>{$stats.posts}</h3><p>{:lang('已发布博文')}</p></div><div class="icon"><i class="fas fa-file-alt"></i></div><a href="/admin/posts" class="small-box-footer">{:lang('查看')} <i class="fas fa-arrow-circle-right"></i></a></div></div>
+  <div><div class="small-box bg-amber-500"><div class="inner"><h3>¥{:format_amount($stats.tips_amount)}</h3><p>{:lang('打赏总额')}</p></div><div class="icon"><i class="fas fa-gift"></i></div><a href="/admin/tips" class="small-box-footer">{:lang('查看')} <i class="fas fa-arrow-circle-right"></i></a></div></div>
+  <div><div class="small-box bg-red-500"><div class="inner"><h3>{$stats.qr_pending}</h3><p>{:lang('待审收款码')}</p></div><div class="icon"><i class="fas fa-qrcode"></i></div><a href="/admin/qr-audit" class="small-box-footer">{:lang('查看')} <i class="fas fa-arrow-circle-right"></i></a></div></div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+  <div class="md:col-span-2">
+    <div class="card"><div class="card-header"><h3 class="card-title">{:lang('近 7 天趋势')}</h3></div>
+      <div class="card-body"><canvas id="trendChart" height="90"></canvas></div>
+    </div>
+  </div>
+  <div>
+    <div class="card"><div class="card-header"><h3 class="card-title">{:lang('待处理事项')}</h3></div>
+      <div class="card-body p-0">
+        <ul class="list-group list-group-flush">
+          <li class="list-group-item d-flex justify-content-between"><span><i class="fas fa-qrcode text-amber-500 mr-2"></i>{:lang('待审收款码')}</span><span class="badge badge-warning">{$stats.qr_pending}</span></li>
+          <li class="list-group-item d-flex justify-content-between"><span><i class="fas fa-balance-scale text-red-500 mr-2"></i>{:lang('纠纷 / 申诉')}</span><span class="badge badge-danger">{$stats.disputes}</span></li>
+          <li class="list-group-item d-flex justify-content-between"><span><i class="fas fa-flag text-blue-500 mr-2"></i>{:lang('待处理举报')}</span><span class="badge badge-info">{$stats.reports}</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{/block}
+
+{block name="scripts"}
+<script>
+  var chartDays = {:json_encode($days)};
+  var chartTips = {:json_encode($tipsSeries)};
+  var chartUsers = {:json_encode($userSeries)};
+</script>
+{literal}
+<script>
+$(function(){
+  var ctx = document.getElementById('trendChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: chartDays,
+      datasets: [
+        { label:t('打赏笔数'), data: chartTips, borderColor:'#f59e0b', backgroundColor:'rgba(245,158,11,.1)', fill:true, tension:.3 },
+        { label:t('新增用户'), data: chartUsers, borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,.1)', fill:true, tension:.3 }
+      ]
+    },
+    options: { responsive:true, plugins:{ legend:{ position:'bottom' } }, scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } } } }
+  });
+});
+</script>
+{/literal}
+{/block}

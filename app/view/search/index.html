@@ -1,0 +1,115 @@
+{extend name="layout/front_layout" /}
+{block name="title"}{:lang('搜索')} · {$site_name}{/block}
+
+{block name="main"}
+<div class="mx-auto max-w-6xl px-4 py-6">
+
+  <!-- 搜索结果标题 -->
+  <div class="mb-6">
+    <h1 class="text-xl font-bold text-slate-900">
+      {if condition="$kw neq ''"}{:lang('搜索')} “<span class="text-blue-600">{$kw}</span>”{else/}{:lang('搜索')}{/if}
+    </h1>
+    {if condition="$kw neq ''"}
+    <p class="text-sm text-slate-400 mt-1">
+      {:lang('找到')} <b class="text-slate-700">{:count($users)}</b> {:lang('位用户')}、<b class="text-slate-700">{:count($posts)}</b> {:lang('篇博文')}
+    </p>
+    {/if}
+  </div>
+
+  {if condition="$kw eq ''"}
+  <div class="text-center py-24 text-slate-400">
+    <div class="text-5xl mb-3">🔍</div>
+    <p>{:lang('在右上角搜索框输入用户名或博文关键词开始搜索')}</p>
+  </div>
+  {else/}
+
+  <!-- 用户结果 -->
+  <section class="mb-10">
+    <h2 class="flex items-center gap-2 text-base font-bold text-slate-900 mb-4">
+      <span>👤 {:lang('用户')}</span>
+      <span class="text-xs font-normal text-slate-400">{:lang('共')} {:count($users)} {:lang('位')}</span>
+    </h2>
+    {if condition="$users"}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+      {foreach $users as $u}
+      <div class="bg-white rounded-2xl shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition p-5 flex flex-col">
+        <div class="flex items-center gap-3">
+          <img src="{:avatar_url($u)}" class="w-12 h-12 rounded-full object-cover shadow-sm">
+          <div class="min-w-0">
+            <p class="font-semibold text-slate-900 truncate">{$u.username}</p>
+            <p class="text-xs {if condition="$u.qr_type eq 2"}text-emerald-600{else/}text-slate-400{/if}">{if condition="$u.qr_type eq 2"}{:lang('商户收款码')}{else/}{:lang('个人收款码')}{/if}</p>
+          </div>
+        </div>
+        <p class="text-sm text-slate-500 line-clamp-2 mt-3 min-h-[40px]">{if condition="$u.bio"}{$u.bio}{else/}{:lang('这个人很懒，还没有简介~')}{/if}</p>
+
+        <div class="mt-3 flex justify-center">
+          {if condition="$u.qr_preview"}
+          <img src="{:qr_asset($u.qr_preview)}" alt="{:lang('收款码')}" class="w-24 h-24 object-contain bg-slate-50 rounded-xl border border-slate-100">
+          {else/}
+          <div class="w-24 h-24 bg-slate-50 rounded-xl border border-dashed border-slate-200 flex items-center justify-center text-xs text-slate-300">{:lang('暂无')}</div>
+          {/if}
+        </div>
+
+        <div class="flex justify-between text-xs text-slate-500 mt-3">
+          <span>{:lang('有效收款')} <b class="text-orange-500">¥{:format_amount($u.tip_total_amount)}</b></span>
+          <span>{:lang('博文')} {$u.post_count}</span>
+        </div>
+
+        <div class="flex gap-2 mt-4">
+          <a href="/u/{$u.id}" class="flex-1 text-center py-2 rounded-xl border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 transition">{:lang('进入主页')}</a>
+          {if condition="$uid eq $u.id"}
+          <button disabled class="flex-1 py-2 rounded-xl bg-slate-100 text-slate-400 text-sm cursor-not-allowed">{:lang('我的卡片')}</button>
+          {elseif condition="$u.can_tip eq 0"}
+          <button disabled class="flex-1 py-2 rounded-xl bg-slate-100 text-slate-400 text-sm cursor-not-allowed">{:lang('未设收款码')}</button>
+          {else/}
+          <button onclick="openTip({$u.id},'{$u.username}','{:qr_asset($u.wechat_qr)}','{:qr_asset($u.alipay_qr)}')" class="flex-1 py-2 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 shadow-sm transition">{:lang('打赏')}TA</button>
+          {/if}
+        </div>
+      </div>
+      {/foreach}
+    </div>
+    {else/}
+    <div class="text-center py-12 text-slate-400 bg-white rounded-2xl shadow-sm">
+      <div class="text-4xl mb-2">🫥</div>
+      <p>{:lang('没有找到匹配的用户')}</p>
+    </div>
+    {/if}
+  </section>
+
+  <!-- 博文结果 -->
+  <section>
+    <h2 class="flex items-center gap-2 text-base font-bold text-slate-900 mb-4">
+      <span>📝 {:lang('博文')}</span>
+      <span class="text-xs font-normal text-slate-400">{:lang('共')} {:count($posts)} {:lang('篇')}</span>
+    </h2>
+    {if condition="$posts"}
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+      {foreach $posts as $p}
+      <article class="bg-white rounded-2xl shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition p-5 flex flex-col">
+        <div class="flex items-center gap-2 mb-3">
+          {if condition="$p.author"}<img src="{:avatar_url($p.author)}" class="w-7 h-7 rounded-full object-cover">{else/}<div class="w-7 h-7 rounded-full bg-slate-200"></div>{/if}
+          <span class="text-xs text-slate-500">{if condition="$p.author"}{$p.author.username}{else/}{:lang('匿名')}{/if}</span>
+          <span class="ml-auto text-[11px] text-slate-400">{:time_ago($p.created_at)}</span>
+        </div>
+        <a href="/post/{$p.id}" class="font-semibold text-slate-900 hover:text-blue-600 line-clamp-2 leading-snug">{$p.title}</a>
+        <p class="text-sm text-slate-500 line-clamp-2 mt-2 flex-1">{if condition="$p.summary"}{$p.summary}{else/}{:lang('（无摘要）')}{/if}</p>
+        <div class="flex items-center gap-3 text-xs text-slate-400 mt-3 pt-3 border-t border-slate-50">
+          {if condition="$p.cat"}<span class="px-2 py-0.5 rounded bg-blue-50 text-blue-600">{$p.cat}</span>{/if}
+          <span>👁 {:number_format($p.view_count)}</span>
+          <span>💬 {$p.comment_count}</span>
+          <span>❤ {$p.like_count}</span>
+        </div>
+      </article>
+      {/foreach}
+    </div>
+    {else/}
+    <div class="text-center py-12 text-slate-400 bg-white rounded-2xl shadow-sm">
+      <div class="text-4xl mb-2">📭</div>
+      <p>{:lang('没有找到匹配的博文')}</p>
+    </div>
+    {/if}
+  </section>
+
+  {/if}
+</div>
+{/block}

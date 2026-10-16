@@ -1,0 +1,113 @@
+{extend name="layout/front_layout" /}
+{block name="title"}{:lang('积分 & 邀请')} · {$site_name}{/block}
+
+{block name="main"}
+<div class="mx-auto max-w-6xl px-4 py-6">
+  <div class="flex flex-col sm:flex-row gap-6">
+    <div class="w-full sm:w-56 shrink-0">{include file="profile/_nav"}</div>
+    <div class="flex-1 min-w-0 space-y-5">
+
+      <!-- 积分余额 + 签到 -->
+      <div class="bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl shadow-sm p-6 text-white">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p class="text-sm text-amber-50">{:lang('我的积分')}</p>
+            <p class="text-4xl font-extrabold mt-1" id="pointsBox">{$u.points}</p>
+            <p class="text-xs text-amber-50 mt-1">{:lang('积分可用于生成专属邀请码，邀请好友注册双方得奖励')}</p>
+          </div>
+          {if condition="$checkin_switch eq 'on'"}
+          <button onclick="doCheckin()" id="checkinBtn"
+            class="px-5 py-2.5 bg-white text-orange-600 text-sm font-semibold rounded-full hover:shadow-lg transition {if condition="$checked_today"}opacity-60 cursor-not-allowed{/if}">
+            {if condition="$checked_today"}{:lang('今日已签到')} ✓{else/}📅 {:lang('每日签到')} +{:site_setting('daily_checkin_points',5)} {:lang('积分')}{/if}
+          </button>
+          {/if}
+        </div>
+      </div>
+
+      <!-- 生成邀请码 -->
+      <div class="bg-white rounded-2xl shadow-sm p-5">
+        <h3 class="font-semibold text-slate-800 mb-2">{:lang('生成专属邀请码')}</h3>
+        <p class="text-sm text-slate-500 mb-4">{:lang('消耗')} <span class="font-bold text-orange-500">{$cost}</span> {:lang('积分生成一个邀请码（单码单用）。把码发给好友，对方注册时填写即可激活账号，双方获得积分奖励。')}</p>
+        <button onclick="genCode()" id="genBtn" class="px-5 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-full hover:bg-blue-700 transition">⚡ {:lang('花')} {$cost} {:lang('积分生成邀请码')}</button>
+        <div id="genResult" class="mt-4 hidden">
+          <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+            <code id="genCodeText" class="text-lg font-mono font-bold text-slate-800 select-all"></code>
+            <button onclick="copyCode()" class="px-3 py-1.5 bg-slate-900 text-white text-xs rounded-lg hover:bg-slate-700">{:lang('复制')}</button>
+          </div>
+          <p class="text-xs text-slate-400 mt-2">{:lang('已扣除')} {$cost} {:lang('积分，复制后发给好友即可。')}</p>
+        </div>
+      </div>
+
+      <!-- 我的邀请码 -->
+      <div class="bg-white rounded-2xl shadow-sm p-5">
+        <h3 class="font-semibold text-slate-800 mb-3">{:lang('我的邀请码')}（共 {$codes|count}）</h3>
+        {if condition="$codes"}
+        <div class="space-y-2">
+          {foreach $codes as $c}
+          <div class="flex items-center justify-between gap-3 p-3 border border-slate-100 rounded-xl">
+            <div class="min-w-0">
+              <code class="text-base font-mono font-bold text-slate-800">{$c.code}</code>
+              <p class="text-xs text-slate-400 mt-0.5">{:lang('创建于')} {$c.created_at}</p>
+            </div>
+            <div class="shrink-0 text-right">
+              {if condition="$c.used_count >= $c.total_quota"}
+              <span class="text-xs px-2 py-1 rounded bg-green-50 text-green-600">{:lang('已使用')}</span>
+              {else/}
+              <span class="text-xs px-2 py-1 rounded bg-blue-50 text-blue-600">{:lang('未使用')}</span>
+              {/if}
+              <p class="text-xs text-slate-400 mt-1">{:lang('已邀请')} {$c.used_count}/{$c.total_quota} {:lang('人')}</p>
+            </div>
+          </div>
+          {/foreach}
+        </div>
+        {else/}
+        <p class="text-sm text-slate-400">{:lang('还没有邀请码，快去生成一个分享给好友吧～')}</p>
+        {/if}
+      </div>
+
+      <!-- 积分流水入口 -->
+      <a href="/profile/points-logs" class="block bg-white rounded-2xl shadow-sm p-4 hover:shadow-md transition">
+        <p class="font-medium text-slate-800">{:lang('积分明细')}</p>
+        <p class="text-xs text-slate-400 mt-1">{:lang('查看积分获取与消费记录')} →</p>
+      </a>
+
+    </div>
+  </div>
+</div>
+{/block}
+
+{block name="scripts"}
+{literal}
+<script>
+function doCheckin(){
+  var btn = document.getElementById('checkinBtn');
+  if(btn.classList.contains('cursor-not-allowed')) return;
+  var fd = new FormData(); fd.append('csrf_token', window.csrfToken);
+  fetch('/profile/checkin', { method:'POST', body: fd, headers:{'X-Requested-With':'XMLHttpRequest'} })
+    .then(function(r){ return r.json(); }).then(function(res){
+      if(res.code===0){ toast(res.msg,'success'); document.getElementById('pointsBox').textContent = res.points; btn.textContent=t('今日已签到 ✓'); btn.classList.add('opacity-60','cursor-not-allowed'); }
+      else toast(res.msg,'error');
+    }).catch(function(){ toast(t('网络异常'), 'error'); });
+}
+function genCode(){
+  var btn = document.getElementById('genBtn');
+  var fd = new FormData(); fd.append('csrf_token', window.csrfToken);
+  fetch('/profile/generate-invite', { method:'POST', body: fd, headers:{'X-Requested-With':'XMLHttpRequest'} })
+    .then(function(r){ return r.json(); }).then(function(res){
+      if(res.code===0){
+        document.getElementById('pointsBox').textContent = res.points;
+        document.getElementById('genCodeText').textContent = res.code_str;
+        document.getElementById('genResult').classList.remove('hidden');
+        toast(res.msg,'success');
+        setTimeout(function(){ location.reload(); }, 1200);
+      } else toast(res.msg,'error');
+    }).catch(function(){ toast(t('网络异常'), 'error'); });
+}
+function copyCode(){
+  var t = document.getElementById('genCodeText').textContent;
+  if(navigator.clipboard){ navigator.clipboard.writeText(t).then(function(){ toast(t('已复制'), 'success'); }); }
+  else { toast(t('请手动复制'), 'error'); }
+}
+</script>
+{/literal}
+{/block}

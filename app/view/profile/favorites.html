@@ -1,0 +1,30 @@
+{extend name="layout/front_layout" /}
+{block name="title"}{:lang('我的收藏')} · {:lang('个人中心')}{/block}
+
+{block name="main"}
+<div class="mx-auto max-w-6xl px-4 py-6">
+  <div class="flex flex-col sm:flex-row gap-6">
+    <div class="w-full sm:w-56 shrink-0">{include file="profile/_nav"}</div>
+    <div class="flex-1 min-w-0">
+      <h2 class="font-semibold text-slate-900 mb-4">{:lang('我的收藏')} <span class="text-slate-400 text-sm font-normal">({:count($posts)})</span></h2>
+
+      {if condition="$posts"}
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {foreach $posts as $p}
+        <article class="bg-white rounded-2xl shadow-sm hover:shadow-md transition p-4 flex flex-col">
+          <a href="/post/{$p.id}" class="font-medium text-slate-800 hover:text-blue-600 line-clamp-2 leading-snug">{$p.title}</a>
+          <p class="text-sm text-slate-500 line-clamp-2 mt-2 flex-1">{if condition="$p.summary"}{$p.summary}{else/}{:lang('（无摘要）')}{/if}</p>
+          <div class="flex items-center gap-3 text-xs text-slate-400 mt-3 pt-3 border-t border-slate-50">
+            <span class="px-2 py-0.5 rounded bg-blue-50 text-blue-600">{$p.cat}</span>
+            <span>👁 {$p.view_count}</span><span>❤ {$p.like_count}</span>
+          </div>
+        </article>
+        {/foreach}
+      </div>
+      {else/}
+      <div class="text-center py-20 text-slate-400"><div class="text-5xl mb-3">⭐</div><p>{:lang('还没有收藏任何博文')}</p></div>
+      {/if}
+    </div>
+  </div>
+</div>
+{/block}

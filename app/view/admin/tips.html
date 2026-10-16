@@ -1,0 +1,55 @@
+{extend name="admin/layout" /}
+{block name="page_title"}{:lang('打赏管理')}{/block}
+
+{block name="main"}
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h3 class="card-title">{:lang('打赏记录')}</h3>
+    <div class="flex items-center gap-2 flex-wrap">
+      <a href="/admin/tips?status=" class="btn btn-sm {if condition="$status eq ''"}btn-primary{else/}btn-default{/if}">{:lang('全部')}</a>
+      <a href="/admin/tips?status=0" class="btn btn-sm {if condition="$status eq '0'"}btn-primary{else/}btn-default{/if}">{:lang('待确认')}</a>
+      <a href="/admin/tips?status=1" class="btn btn-sm {if condition="$status eq '1'"}btn-primary{else/}btn-default{/if}">{:lang('已收到')}</a>
+      <a href="/admin/tips?status=2" class="btn btn-sm {if condition="$status eq '2'"}btn-primary{else/}btn-default{/if}">{:lang('异常')}</a>
+      <form class="form-inline d-inline" method="post" action="/admin/tips/export" onsubmit="return exportCsv()">
+        <input type="hidden" name="csrf_token" value="{$csrf_token}">
+        <input type="hidden" name="status" value="{$status}">
+        <button class="btn btn-sm btn-success">{:lang('导出 CSV')}</button>
+      </form>
+      <form class="form-inline d-inline" method="get" action="/admin/tips">
+        <input type="hidden" name="status" value="{$status}">
+        <input type="text" name="kw" value="{$kw}" placeholder="{:lang('搜索对方/备注/单号')}" class="form-control form-control-sm !w-44">
+        <button class="btn btn-sm btn-primary whitespace-nowrap">搜索</button>
+      </form>
+    </div>
+  </div>
+  <div class="card-body table-responsive p-0">
+    <table class="table table-hover text-nowrap">
+      <thead><tr><th>ID</th><th>{:lang('付款方')}</th><th>{:lang('收款方')}</th><th>{:lang('金额')}</th><th>{:lang('档位')}</th><th>{:lang('渠道')}</th><th>{:lang('状态')}</th><th>{:lang('备注')}</th><th>{:lang('时间')}</th></tr></thead>
+      <tbody>
+      {foreach $tips as $t}
+        <tr>
+          <td>{$t.id}</td>
+          <td>{if condition="$t.from_user_id && isset($users[$t.from_user_id])"}{$users[$t.from_user_id]['username']}{else/}游客{/if}</td>
+          <td>{if condition="isset($users[$t.to_user_id])"}{$users[$t.to_user_id]['username']}{else/}未知{/if}</td>
+          <td>¥{:format_amount($t.amount)}</td>
+          <td>{$t.level}</td>
+          <td>{:pay_type_text($t.pay_type)}</td>
+          <td><span class="{:audit_status_badge($t.status)} badge">{:tip_status_text($t.status)}</span></td>
+          <td>{if condition="$t.remark"}{$t.remark}{/if}</td>
+          <td>{$t.created_at}</td>
+        </tr>
+      {/foreach}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-body">{$pager|raw}</div>
+</div>
+{/block}
+
+{block name="scripts"}
+{literal}
+<script>
+function exportCsv(){ return true; }
+</script>
+{/literal}
+{/block}

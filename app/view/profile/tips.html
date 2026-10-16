@@ -1,0 +1,45 @@
+{extend name="layout/front_layout" /}
+{block name="title"}{if condition="$mode eq 'received'"}{:lang('收到的打赏')}{else/}{:lang('发出的打赏')}{/if} · {:lang('个人中心')}{/block}
+
+{block name="main"}
+<div class="mx-auto max-w-6xl px-4 py-6">
+  <div class="flex flex-col sm:flex-row gap-6">
+    <div class="w-full sm:w-56 shrink-0">{include file="profile/_nav"}</div>
+    <div class="flex-1 min-w-0">
+      <div class="flex items-center gap-2 mb-4">
+        {if condition="$mode eq 'received'"}
+        <a href="/profile/received" class="px-3 py-1.5 rounded-full bg-blue-600 text-white text-sm">{:lang('收到的')}</a>
+        <a href="/profile/sent" class="px-3 py-1.5 rounded-full bg-white text-slate-600 border border-slate-200 text-sm">{:lang('发出的')}</a>
+        {else/}
+        <a href="/profile/received" class="px-3 py-1.5 rounded-full bg-white text-slate-600 border border-slate-200 text-sm">{:lang('收到的')}</a>
+        <a href="/profile/sent" class="px-3 py-1.5 rounded-full bg-blue-600 text-white text-sm">{:lang('发出的')}</a>
+        {/if}
+      </div>
+
+      {if condition="$tips"}
+      <div class="bg-white rounded-2xl shadow-sm divide-y divide-slate-50">
+        {foreach $tips as $t}
+        <div class="flex items-center gap-3 p-4">
+          <img src="{:avatar_url($users[$t.from_user_id] ?? $users[$t.to_user_id] ?? null)}" class="w-10 h-10 rounded-full object-cover">
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium text-slate-800">
+              {if condition="$mode eq 'received'"}{:lang('来自')} {if condition="isset($users[$t.from_user_id])"}{$users[$t.from_user_id]['username']}{else/}{:lang('游客')}{/if}
+              {else/}{:lang('打赏给')} {if condition="isset($users[$t.to_user_id])"}{$users[$t.to_user_id]['username']}{else/}{:lang('未知')}{/if}{/if}
+            </p>
+            <p class="text-xs text-slate-400 mt-0.5">{:time_ago($t.created_at)} · {:pay_type_text($t.pay_type)} · {:lang('档位')} {$t.level}</p>
+            {if condition="$t.remark"}<p class="text-xs text-slate-500 mt-1 truncate">“{$t.remark}”</p>{/if}
+          </div>
+          <div class="text-right shrink-0">
+            <p class="font-semibold {if condition="$t.status eq 2"}text-red-500{else/}text-orange-500{/if}">¥{:format_amount($t.amount)}</p>
+            <span class="{:audit_status_badge($t.status)} text-[11px] px-2 py-0.5 rounded mt-1 inline-block">{:tip_status_text($t.status)}</span>
+          </div>
+        </div>
+        {/foreach}
+      </div>
+      {else/}
+      <div class="text-center py-20 text-slate-400"><div class="text-5xl mb-3">🎁</div><p>{if condition="$mode eq 'received'"}{:lang('还没有收到打赏，去广场展示自己吧')}{/if}{if condition="$mode eq 'sent'"}{:lang('还没有打赏过别人哦')}{/if}</p></div>
+      {/if}
+    </div>
+  </div>
+</div>
+{/block}

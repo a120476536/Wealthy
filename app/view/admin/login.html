@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{:lang('后台登录')} · {$site_name}</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css">
+  <script src="https://cdn.tailwindcss.com/3.4.1"></script>
+  <style>
+    body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif; }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 min-h-screen flex items-center justify-center p-4 antialiased">
+  <div class="w-full max-w-sm">
+    <div class="text-center mb-6 text-white">
+      <i class="fas fa-gem text-blue-400 text-3xl mb-2"></i>
+      <h1 class="text-xl font-bold">{$site_name} {:lang('后台')}</h1>
+      <p class="text-slate-400 text-sm mt-1">{:lang('管理控制台')}</p>
+    </div>
+    <div class="bg-white rounded-2xl shadow-2xl p-6">
+      {if condition="isset($error)"}
+      <div class="mb-4 px-3 py-2 rounded-lg bg-red-50 text-red-600 text-sm">{$error}</div>
+      {/if}
+      <form id="loginForm">
+        <label class="block text-sm font-medium text-slate-600 mb-1">{:lang('管理员账号')}</label>
+        <div class="relative mb-4">
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><i class="fas fa-user"></i></span>
+          <input type="text" id="username" class="w-full rounded-lg border border-slate-300 pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400" placeholder="{:lang('管理员账号')}" value="admin">
+        </div>
+        <label class="block text-sm font-medium text-slate-600 mb-1">{:lang('密码')}</label>
+        <div class="relative mb-5">
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><i class="fas fa-lock"></i></span>
+          <input type="password" id="password" class="w-full rounded-lg border border-slate-300 pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400" placeholder="{:lang('密码')}" value="admin888">
+        </div>
+        <button type="button" onclick="doLogin()" class="w-full py-2.5 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 shadow-sm">{:lang('登录')}</button>
+      </form>
+    </div>
+    <p class="text-center text-slate-500 text-xs mt-4">默认账号 admin / admin888（{:lang('演示环境')}）</p>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+  {literal}
+  <script>
+  function doLogin(){
+    var fd = new FormData();
+    fd.append('csrf_token', '{/literal}{$csrf_token}{literal}');
+    fd.append('username', $('#username').val());
+    fd.append('password', $('#password').val());
+    fetch('/admin/do-login', { method:'POST', body: fd, headers:{'X-Requested-With':'XMLHttpRequest'} })
+      .then(function(r){ return r.json(); }).then(function(res){
+        if(res.code===0){ location.href='/admin/'; }
+        else { Swal.fire({ icon:'error', title:t('登录失败'), text:res.msg, confirmButtonText:t('好的'), confirmButtonColor:'#2563eb' }); }
+      });
+  }
+  </script>
+  {/literal}
+</body>
+</html>

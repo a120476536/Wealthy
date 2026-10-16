@@ -1,0 +1,86 @@
+{extend name="admin/layout" /}
+{block name="page_title"}{:lang('举报处理')}{/block}
+
+{block name="main"}
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h3 class="card-title">{:lang('举报列表（共 %s）', [$total])}</h3>
+    <div class="flex items-center gap-2 flex-wrap">
+      <a href="/admin/reports?status=" class="btn btn-sm {if condition="$status eq ''"}btn-primary{else/}btn-default{/if}">{:lang('全部')}</a>
+      <a href="/admin/reports?status=0" class="btn btn-sm {if condition="$status eq '0'"}btn-primary{else/}btn-default{/if}">{:lang('待处理')}</a>
+      <a href="/admin/reports?status=1" class="btn btn-sm {if condition="$status eq '1'"}btn-primary{else/}btn-default{/if}">{:lang('已处理')}</a>
+      <form class="form-inline" method="get" action="/admin/reports">
+        <input type="hidden" name="status" value="{$status}">
+        <input type="text" name="kw" value="{$kw}" placeholder="{:lang('搜索举报人/原因')}" class="form-control form-control-sm !w-44">
+        <button class="btn btn-sm btn-primary whitespace-nowrap">搜索</button>
+      </form>
+    </div>
+  </div>
+  <div class="card-body table-responsive p-0">
+    <table class="table table-hover">
+      <thead><tr><th>ID</th><th>{:lang('类型')}</th><th>{:lang('举报对象')}</th><th>{:lang('举报人')}</th><th>{:lang('原因')}</th><th>{:lang('状态')}</th><th>{:lang('处理备注')}</th><th>{:lang('时间')}</th><th>{:lang('操作')}</th></tr></thead>
+      <tbody>
+      {foreach $rows as $r}
+        <tr>
+          <td>{$r.id}</td>
+          <td>{if condition="$r.target_type eq 1"}{:lang('博文')}{elseif condition="$r.target_type eq 2"/}{:lang('评论')}{else/}{:lang('收款码')}{/if}</td>
+          <td>{if condition="$r.target_url"}<a href="{$r.target_url}" target="_blank">{$r.target_text}</a>{else/}{$r.target_text}{/if}</td>
+          <td>{if condition="$r.reporter_id && isset($users[$r.reporter_id])"}{$users[$r.reporter_id]['username']}{else/}匿名{/if}</td>
+          <td>{if condition="$r.reason"}{$r.reason}{else/}-{/if}</td>
+          <td>{if condition="$r.status eq 1"}<span class="badge badge-success">{:lang('已处理')}</span>{else/}<span class="badge badge-warning">{:lang('待处理')}</span>{/if}</td>
+          <td>{if condition="$r.handle_note"}{$r.handle_note}{else/}-{/if}</td>
+          <td>{$r.created_at}</td>
+          <td>
+            {if condition="$r.status eq 0"}
+            <button onclick="openHandle({$r.id})" class="btn btn-xs btn-info">{:lang('处理')}</button>
+            <button onclick="handle({$r.id}, 'ignore')" class="btn btn-xs btn-default">{:lang('忽略')}</button>
+            {else/}
+            <span class="text-slate-400">—</span>
+            {/if}
+          </td>
+        </tr>
+      {/foreach}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-body">{$pager|raw}</div>
+</div>
+
+<div id="rModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 p-4 overflow-y-auto">
+  <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl my-8">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+      <h3 class="font-bold text-slate-900">{:lang('处理举报')}</h3>
+      <button type="button" onclick="wbHide('rModal')" class="text-slate-400 hover:text-slate-700 text-xl leading-none">✕</button>
+    </div>
+    <div class="p-5 space-y-4">
+      <input type="hidden" id="rId">
+      <div><label class="block text-sm font-medium text-slate-600 mb-1">{:lang('处理备注')}</label><textarea id="rNote" class="form-control" rows="3" placeholder="{:lang('如已下架/已驳回等（选填）')}"></textarea></div>
+    </div>
+    <div class="px-5 py-4 bg-slate-50 flex gap-3">
+      <button class="btn btn-default flex-1" onclick="wbHide('rModal')">取消</button>
+      <button class="btn btn-primary flex-1" onclick="handle($('#rId').val(), 'process')">{:lang('标记已处理')}</button>
+    </div>
+  </div>
+</div>
+{/block}
+
+{block name="scripts"}
+{literal}
+<script>
+function openHandle(id){ $('#rId').val(id); $('#rNote').val(''); wbShow('rModal'); }
+function handle(id, act){
+  var tip = act==='process' ? t('确认标记为已处理？') : (act==='ignore' ? t('确认忽略该举报？') : '');
+  var doFetch = function(){
+    var fd = new FormData();
+    fd.append('csrf_token', window.csrfToken);
+    fd.append('id', id);
+    fd.append('act', act);
+    fd.append('handle_note', act==='process' ? ($('#rNote').val()||'') : t('忽略'));
+    fetch('/admin/reports/handle', { method:'POST', body: fd, headers:{'X-Requested-With':'XMLHttpRequest'} })
+      .then(function(r){ return r.json(); }).then(function(res){ if(res.code===0){ wbHide('rModal'); location.reload(); } else wbToast(res.msg, 'error'); });
+  };
+  if(tip){ wbConfirm(tip).then(function(ok){ if(ok) doFetch(); }); } else { doFetch(); }
+}
+</script>
+{/literal}
+{/block}

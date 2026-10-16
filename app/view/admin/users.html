@@ -1,0 +1,147 @@
+{extend name="admin/layout" /}
+{block name="page_title"}{:lang('用户管理')}{/block}
+
+{block name="main"}
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h3 class="card-title">{:lang('用户列表（共 %s）', [$total])}</h3>
+    <form class="form-inline" method="get" action="/admin/users">
+      <input type="text" name="kw" value="{$kw}" placeholder="{:lang('搜索用户名/昵称/手机号')}" class="form-control form-control-sm !w-44">
+      <select name="status" class="form-control form-control-sm !w-auto">
+        <option value="" {if condition="$status eq ''"}selected{/if}>{:lang('全部状态')}</option>
+        <option value="1" {if condition="$status eq '1'"}selected{/if}>{:lang('正常')}</option>
+        <option value="0" {if condition="$status eq '0'"}selected{/if}>{:lang('禁用')}</option>
+      </select>
+      <button class="btn btn-sm btn-primary whitespace-nowrap">{:lang('筛选')}</button>
+    </form>
+  </div>
+  <div class="card-body table-responsive p-0">
+    <table class="table table-hover text-nowrap">
+      <thead><tr><th>ID</th><th>{:lang('头像')}</th><th>{:lang('用户名')}</th><th>{:lang('收款总额')}</th><th>{:lang('积分')}</th><th>{:lang('博文')}</th><th>{:lang('粉丝')}</th><th>{:lang('等级')}</th><th>{:lang('注册时间')}</th><th>{:lang('状态')}</th><th>{:lang('操作')}</th></tr></thead>
+      <tbody>
+      {foreach $users as $u}
+        <tr>
+          <td>{$u.id}</td>
+          <td><img src="{:avatar_url($u)}" class="rounded-circle" width="32" height="32"></td>
+          <td>{$u.username}</td>
+          <td>¥{:format_amount($u.tip_total_amount)}</td>
+          <td><span class="badge badge-info">{$u.points}</span></td>
+          <td>{$u.post_count}</td>
+          <td>{$u.follower_count}</td>
+          <td>{:level_text($u.level)}</td>
+          <td>{$u.created_at}</td>
+          <td>{if condition="$u.status eq 1"}<span class="badge badge-success">{:lang('正常')}</span>{else/}<span class="badge badge-danger">{:lang('禁用')}</span>{/if}</td>
+          <td>
+            <a href="/admin/users/{$u.id}" class="btn btn-xs btn-info">{:lang('详情')}</a>
+            <button onclick="toggleStatus({$u.id}, this)" class="btn btn-xs {if condition="$u.status eq 1"}btn-warning{else/}btn-success{/if}">{if condition="$u.status eq 1"}{:lang('禁用')}{else/}{:lang('启用')}{/if}</button>
+            <button onclick="openEdit({$u.id}, '{$u.username}', {$u.status}, {$u.risk_remind_count})" class="btn btn-xs btn-primary">{:lang('编辑')}</button>
+            <button onclick="openPoints({$u.id}, '{$u.username}', {$u.points})" class="btn btn-xs btn-dark">{:lang('积分')}</button>
+            <button onclick="del({$u.id})" class="btn btn-xs btn-danger">{:lang('删除')}</button>
+          </td>
+        </tr>
+      {/foreach}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-body">{$pager|raw}</div>
+</div>
+
+<div id="uModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 p-4 overflow-y-auto">
+  <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl my-8">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+      <h3 class="font-bold text-slate-900">{:lang('编辑用户')}</h3>
+      <button type="button" onclick="wbHide('uModal')" class="text-slate-400 hover:text-slate-700 text-xl leading-none">✕</button>
+    </div>
+    <div class="p-5 space-y-4">
+      <input type="hidden" id="uId">
+      <div><label class="block text-sm font-medium text-slate-600 mb-1">{:lang('重置密码（留空=不改）')}</label><input id="uPwd" type="text" class="form-control" placeholder="输入新密码"></div>
+      <div><label class="block text-sm font-medium text-slate-600 mb-1">{:lang('简介')}</label><input id="uBio" class="form-control" placeholder="{:lang('留空=不改')}"></div>
+      <div><label class="block text-sm font-medium text-slate-600 mb-1">{:lang('头像路径（/uploads/...，留空=不改）')}</label><input id="uAvatar" class="form-control" placeholder="{:lang('留空=不改')}"></div>
+      <div><label class="block text-sm font-medium text-slate-600 mb-1">{:lang('状态')}</label><select id="uStatus" class="form-control"><option value="1">{:lang('正常')}</option><option value="0">{:lang('禁用')}</option></select></div>
+      <div><label class="block text-sm font-medium text-slate-600 mb-1">{:lang('风控提醒次数')}</label><input id="uRisk" type="number" class="form-control"></div>
+    </div>
+    <div class="px-5 py-4 bg-slate-50 flex gap-3">
+      <button class="btn btn-default flex-1" onclick="wbHide('uModal')">取消</button>
+      <button class="btn btn-primary flex-1" onclick="saveEdit()">保存</button>
+    </div>
+  </div>
+</div>
+
+<div id="pModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 p-4 overflow-y-auto">
+  <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl my-8">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+      <h3 class="font-bold text-slate-900">{:lang('调整积分')} - <span id="pUser"></span></h3>
+      <button type="button" onclick="wbHide('pModal')" class="text-slate-400 hover:text-slate-700 text-xl leading-none">✕</button>
+    </div>
+    <div class="p-5 space-y-4">
+      <input type="hidden" id="pId">
+      <div><label class="block text-sm font-medium text-slate-600 mb-1">{:lang('当前积分')}</label><p id="pCur" class="text-lg font-bold text-slate-800"></p></div>
+      <div><label class="block text-sm font-medium text-slate-600 mb-1">{:lang('调整值（正=发放，负=扣减）')}</label><input id="pDelta" type="number" class="form-control" placeholder="{:lang('例如 100 或 -50')}"></div>
+      <div><label class="block text-sm font-medium text-slate-600 mb-1">{:lang('备注')}</label><input id="pRemark" class="form-control" placeholder="{:lang('可选')}"></div>
+    </div>
+    <div class="px-5 py-4 bg-slate-50 flex gap-3">
+      <button class="btn btn-default flex-1" onclick="wbHide('pModal')">取消</button>
+      <button class="btn btn-primary flex-1" onclick="savePoints()">{:lang('确定')}</button>
+    </div>
+  </div>
+</div>
+{/block}
+
+{block name="scripts"}
+{literal}
+<script>
+function toggleStatus(id, btn){
+  wbConfirm(t('确认切换该用户状态？')).then(function(ok){
+    if(!ok) return;
+    var fd = new FormData(); fd.append('csrf_token', window.csrfToken); fd.append('id', id);
+    fetch('/admin/user/toggle-status', { method:'POST', body: fd, headers:{'X-Requested-With':'XMLHttpRequest'} })
+      .then(function(r){ return r.json(); }).then(function(res){ if(res.code===0){ location.reload(); } else wbToast(res.msg, 'error'); });
+  });
+}
+function openEdit(id, username, status, risk){
+  $('#uId').val(id); $('#uPwd').val(''); $('#uBio').val(''); $('#uAvatar').val('');
+  $('#uStatus').val(status); $('#uRisk').val(risk);
+  wbShow('uModal');
+}
+function saveEdit(){
+  var fd = new FormData();
+  fd.append('csrf_token', window.csrfToken);
+  fd.append('id', $('#uId').val());
+  fd.append('password', $('#uPwd').val());
+  fd.append('bio', $('#uBio').val());
+  fd.append('avatar', $('#uAvatar').val());
+  fd.append('status', $('#uStatus').val());
+  fd.append('risk_remind_count', $('#uRisk').val());
+  fetch('/admin/user/edit', { method:'POST', body: fd, headers:{'X-Requested-With':'XMLHttpRequest'} })
+    .then(function(r){ return r.json(); }).then(function(res){ if(res.code===0){ wbHide('uModal'); location.reload(); } else wbToast(res.msg, 'error'); });
+}
+function del(id){
+  wbConfirm(t('确认删除该用户（软删除，前台不可见）？')).then(function(ok){
+    if(!ok) return;
+    var fd = new FormData(); fd.append('csrf_token', window.csrfToken); fd.append('id', id);
+    fetch('/admin/user/delete', { method:'POST', body: fd, headers:{'X-Requested-With':'XMLHttpRequest'} })
+      .then(function(r){ return r.json(); }).then(function(res){ if(res.code===0){ location.reload(); } else wbToast(res.msg, 'error'); });
+  });
+}
+function openPoints(id, username, points){
+  $('#pId').val(id); $('#pUser').text(username); $('#pCur').text(points);
+  $('#pDelta').val(''); $('#pRemark').val('');
+  wbShow('pModal');
+}
+function savePoints(){
+  var d = parseInt($('#pDelta').val(), 10);
+  if(!d){ wbToast(t('请填写调整值'), 'error'); return; }
+  var fd = new FormData();
+  fd.append('csrf_token', window.csrfToken);
+  fd.append('id', $('#pId').val());
+  fd.append('delta', d);
+  fd.append('remark', $('#pRemark').val());
+  fetch('/admin/user/adjust-points', { method:'POST', body: fd, headers:{'X-Requested-With':'XMLHttpRequest'} })
+    .then(function(r){ return r.json(); }).then(function(res){
+      if(res.code===0){ wbHide('pModal'); wbToast(res.msg, 'success'); setTimeout(function(){ location.reload(); }, 800); }
+      else wbToast(res.msg, 'error');
+    });
+}
+</script>
+{/literal}
+{/block}

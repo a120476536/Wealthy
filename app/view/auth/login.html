@@ -1,0 +1,50 @@
+{extend name="layout/front_layout" /}
+{block name="title"}登录 · {$site_name}{/block}
+
+{block name="main"}
+<div class="mx-auto max-w-md px-4 py-12">
+  <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
+    <div class="text-center mb-7">
+      {if condition="$site_logo"}<img src="{$site_logo}" alt="{$site_name}" class="w-12 h-12 rounded-2xl object-cover shadow inline-block">{else/}<span class="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-orange-500 inline-flex items-center justify-center text-white font-bold text-xl shadow">富</span>{/if}
+      <h1 class="text-xl font-bold text-slate-900 mt-3">{:lang('欢迎回来')}</h1>
+      <p class="text-sm text-slate-400">{:lang('登录以展示收款码、发布博文、互相打赏')}</p>
+    </div>
+
+    <form id="loginForm">
+      <input type="hidden" name="csrf_token" value="{$csrf_token}">
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-600 mb-1.5">{:lang('用户名')}</label>
+          <input name="username" type="text" required autocomplete="username"
+                 class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-600 mb-1.5">{:lang('密码')}</label>
+          <input name="password" type="password" required autocomplete="current-password"
+                 class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400">
+        </div>
+        <button type="submit" class="w-full py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 shadow-sm transition">{:lang('登录')}</button>
+      </div>
+    </form>
+
+    <p class="text-center text-sm text-slate-500 mt-6">
+      {:lang('还没有账号？')}<a href="/register" class="text-blue-600 font-medium hover:underline">{:lang('立即注册')}</a>
+    </p>
+    <p class="text-center text-xs text-slate-300 mt-2">{:lang('演示账号：任意用户 / abc123456')}</p>
+  </div>
+</div>
+{/block}
+
+{block name="scripts"}
+{literal}
+<script>
+$('#loginForm').on('submit', function(e){
+  e.preventDefault();
+  var btn = $(this).find('button[type=submit]'); btn.prop('disabled',true).text(t('登录中...'));
+  $.ajax({ url:'/login', method:'POST', data:$(this).serialize(), dataType:'json' })
+    .done(function(res){ if(res.code===0){ toast(res.msg,'success'); setTimeout(function(){ location.href=res.url||'/'; },700); } else { toast(res.msg,'error'); btn.prop('disabled',false).text(t('登录')); } })
+    .fail(function(){ toast(t('网络异常'), 'error'); btn.prop('disabled',false).text(t('登录')); });
+});
+</script>
+{/literal}
+{/block}

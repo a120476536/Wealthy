@@ -1,0 +1,199 @@
+{extend name="layout/front_layout" /}
+{block name="title"}{:lang('广场')} · {$site_name}{/block}
+
+{block name="main"}
+<div class="mx-auto max-w-6xl px-4 py-6">
+
+  <!-- 顶部广告 -->
+  {if condition="$ads.square_top"}
+  {if condition="$ads.square_top.url"}
+  <a href="{$ads.square_top.url}" target="_blank" rel="noopener noreferrer" onclick="trackAdClick({$ads.square_top.id})" class="block mb-6 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition">
+    <img src="/uploads/{$ads.square_top.image}" alt="{$ads.square_top.title}" class="w-full h-[90px] object-cover">
+  </a>
+  {else/}
+  <div class="block mb-6 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition">
+    <img src="/uploads/{$ads.square_top.image}" alt="{$ads.square_top.title}" class="w-full h-[90px] object-cover">
+  </div>
+  {/if}
+  {/if}
+
+  <!-- Hero -->
+  <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-blue-500 to-orange-500 text-white p-8 md:p-10 mb-6">
+    <div class="relative z-10 max-w-2xl">
+      <h1 class="text-2xl md:text-3xl font-bold mb-2">{:lang('广场')} · {:lang('发现值得支持的人')}</h1>
+      <p class="text-blue-50/90 mb-5">{:lang('人人都可以收获来自社区的支持。在这里展示你的收款码，分享你的内容，收获来自社区的支持。')}</p>
+      {if condition="$uid gt 0"}
+      <button onclick="openUpload()" class="px-5 py-2.5 bg-white text-blue-600 font-semibold rounded-full shadow hover:bg-blue-50 transition">+ {:lang('上传我的收款码')}</button>
+      {else/}
+      <a href="/register" class="px-5 py-2.5 bg-white text-blue-600 font-semibold rounded-full shadow hover:bg-blue-50 transition">{:lang('免费注册，开始展示')}</a>
+      {/if}
+    </div>
+    <div class="absolute right-0 top-0 h-full w-1/3 bg-white/10 rounded-l-full -mr-20 hidden md:block"></div>
+  </div>
+
+  <!-- 双榜单：富豪榜 / 善人榜（后台可配置开关，默认关闭） -->
+  {if condition="$show_lists"}
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+    {if condition="$rich_enabled"}
+    <!-- 富豪榜：收款总额 TOP10（含待确认） -->
+    <div class="bg-white rounded-2xl shadow-sm p-5">
+      <div class="flex items-center gap-2 mb-4">
+        <h2 class="text-base font-bold text-slate-900">👑 {:lang('富豪榜')}</h2>
+        <span class="text-xs text-slate-400">{:lang('收款总额 TOP 10')}</span>
+      </div>
+      {if condition="$rich_list"}
+      <ol class="space-y-2.5">
+        {foreach $rich_list as $u}
+        <li class="flex items-center gap-3">
+          <span class="w-6 text-center text-sm font-bold
+            {if condition="$u.rank eq 1"}text-amber-500
+            {elseif condition="$u.rank eq 2"}text-slate-400
+            {elseif condition="$u.rank eq 3"}text-orange-400
+            {else/}text-slate-300{/if}">{$u.rank}</span>
+          <img src="{:avatar_url($u)}" class="w-9 h-9 rounded-full object-cover shadow-sm">
+          <a href="/u/{$u.id}" class="flex-1 min-w-0 truncate text-sm text-slate-800 hover:text-blue-600">{$u.username}</a>
+          <span class="text-sm font-semibold text-orange-500">¥{:format_amount($u.total)}</span>
+        </li>
+        {/foreach}
+      </ol>
+      {else/}
+      <p class="text-sm text-slate-400 text-center py-6">{:lang('暂无收款记录')}</p>
+      {/if}
+    </div>
+    {/if}
+
+    {if condition="$kind_enabled"}
+    <!-- 善人榜：打赏出去 TOP10 -->
+    <div class="bg-white rounded-2xl shadow-sm p-5">
+      <div class="flex items-center gap-2 mb-4">
+        <h2 class="text-base font-bold text-slate-900">🙏 {:lang('善人榜')}</h2>
+        <span class="text-xs text-slate-400">{:lang('打赏出去 TOP 10')}</span>
+      </div>
+      {if condition="$kind_list"}
+      <ol class="space-y-2.5">
+        {foreach $kind_list as $u}
+        <li class="flex items-center gap-3">
+          <span class="w-6 text-center text-sm font-bold
+            {if condition="$u.rank eq 1"}text-emerald-500
+            {elseif condition="$u.rank eq 2"}text-slate-400
+            {elseif condition="$u.rank eq 3"}text-teal-500
+            {else/}text-slate-300{/if}">{$u.rank}</span>
+          <img src="{:avatar_url($u)}" class="w-9 h-9 rounded-full object-cover shadow-sm">
+          <a href="/u/{$u.id}" class="flex-1 min-w-0 truncate text-sm text-slate-800 hover:text-blue-600">{$u.username}</a>
+          <span class="text-sm font-semibold text-emerald-500">¥{:format_amount($u.total)}</span>
+        </li>
+        {/foreach}
+      </ol>
+      {else/}
+      <p class="text-sm text-slate-400 text-center py-6">{:lang('暂无打赏记录')}</p>
+      {/if}
+    </div>
+    {/if}
+  </div>
+  {/if}
+
+  <!-- 工具条 -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+    <p class="text-sm text-slate-500">共 <span class="font-semibold text-slate-800">{$total}</span> {:lang('位用户')}</p>
+    <div class="flex items-center gap-2 text-sm">
+      <span class="text-slate-400">{:lang('排序')}</span>
+      <select onchange="location.href='/?'+ (document.getElementById('kwInput').value? 'kw='+encodeURIComponent(document.getElementById('kwInput').value)+'&':'') + 'sort='+this.value" class="border border-slate-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-200">
+        <option value="reg" {if condition="$sort eq 'reg'"}selected{/if}>{:lang('最新注册')}</option>
+        <option value="amount" {if condition="$sort eq 'amount'"}selected{/if}>{:lang('收款总额')}</option>
+        <option value="post" {if condition="$sort eq 'post'"}selected{/if}>{:lang('博文数量')}</option>
+      </select>
+      <input id="kwInput" type="hidden" value="{$kw}">
+    </div>
+  </div>
+
+  <!-- 卡片网格 -->
+  {if condition="$users"}
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+    {foreach $users as $u}
+    <div class="bg-white rounded-2xl shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition p-5 flex flex-col">
+      <div class="flex items-center gap-3">
+        <img src="{:avatar_url($u)}" class="w-12 h-12 rounded-full object-cover shadow-sm">
+        <div class="min-w-0">
+          <p class="font-semibold text-slate-900 truncate">{$u.username}</p>
+          <p class="text-xs {if condition="$u.qr_type eq 2"}text-emerald-600{else/}text-slate-400{/if}">{if condition="$u.qr_type eq 2"}{:lang('商户收款码')}{else/}{:lang('个人收款码')}{/if}</p>
+        </div>
+      </div>
+      <p class="text-sm text-slate-500 line-clamp-2 mt-3 min-h-[40px]">{if condition="$u.bio"}{$u.bio}{else/}{:lang('这个人很懒，还没有简介~')}{/if}</p>
+
+      <div class="mt-3 flex justify-center">
+        {if condition="$u.qr_preview"}
+        <img src="{:qr_asset($u.qr_preview)}" alt="{:lang('收款码')}" class="w-24 h-24 object-contain bg-slate-50 rounded-xl border border-slate-100 cursor-pointer" onclick="showBigQr('{:qr_asset($u.qr_preview)}')">
+        {else/}
+        <div class="w-24 h-24 bg-slate-50 rounded-xl border border-dashed border-slate-200 flex items-center justify-center text-xs text-slate-300">{:lang('暂无')}</div>
+        {/if}
+      </div>
+
+      <div class="flex justify-between text-xs text-slate-500 mt-3">
+        <span>{:lang('有效收款')} <b class="text-orange-500">¥{:format_amount($u.tip_total_amount)}</b></span>
+        <span>{:lang('博文')} {$u.post_count}</span>
+      </div>
+
+      <div class="flex gap-2 mt-4">
+        <a href="/u/{$u.id}" class="flex-1 text-center py-2 rounded-xl border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 transition">{:lang('进入主页')}</a>
+        {if condition="$uid eq $u.id"}
+        <button disabled class="flex-1 py-2 rounded-xl bg-slate-100 text-slate-400 text-sm cursor-not-allowed" title="{:lang('不能打赏自己')}">{:lang('我的卡片')}</button>
+        {elseif condition="$u.can_tip eq 0"}
+        <button disabled class="flex-1 py-2 rounded-xl bg-slate-100 text-slate-400 text-sm cursor-not-allowed">{:lang('未设收款码')}</button>
+        {else/}
+        <button onclick="openTip({$u.id},'{$u.username}','{:qr_asset($u.wechat_qr)}','{:qr_asset($u.alipay_qr)}')" class="flex-1 py-2 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 shadow-sm transition">{:lang('打赏TA')}</button>
+        {/if}
+      </div>
+    </div>
+    {/foreach}
+  </div>
+
+  <!-- 分页 -->
+  {if condition="$total gt $perPage"}
+  <div class="flex flex-wrap justify-center items-center gap-1 mt-8 text-sm">
+    {if condition="$page gt 1"}<a href="/?page={$prevPage}{if condition="$kw neq ''"}&kw={$kw}{/if}{if condition="$sort neq 'reg'"}&sort={$sort}{/if}" class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50">{:lang('上一页')}</a>{/if}
+    {foreach $pages as $i}
+      {if condition="$i eq '...'"}<span class="px-2 py-1.5 text-slate-400">…</span>
+      {elseif condition="$i eq $page"}<span class="px-3 py-1.5 rounded-lg bg-blue-600 text-white">{$i}</span>
+      {else/}<a href="/?page={$i}{if condition="$kw neq ''"}&kw={$kw}{/if}{if condition="$sort neq 'reg'"}&sort={$sort}{/if}" class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50">{$i}</a>{/if}
+    {/foreach}
+    {if condition="$page lt $totalPages"}<a href="/?page={$nextPage}{if condition="$kw neq ''"}&kw={$kw}{/if}{if condition="$sort neq 'reg'"}&sort={$sort}{/if}" class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50">{:lang('下一页')}</a>{/if}
+  </div>
+  {/if}
+
+  {else/}
+  <div class="text-center py-20 text-slate-400">
+    <div class="text-5xl mb-3">🫥</div>
+    <p>{:lang('暂无符合条件的用户')}</p>
+  </div>
+  {/if}
+
+  <!-- 中部 / 底部广告 -->
+  {if condition="$ads.square_mid"}
+  {if condition="$ads.square_mid.url"}
+  <a href="{$ads.square_mid.url}" target="_blank" rel="noopener noreferrer" onclick="trackAdClick({$ads.square_mid.id})" class="block mt-8 rounded-2xl overflow-hidden shadow-sm"><img src="/uploads/{$ads.square_mid.image}" class="w-full h-[80px] object-cover"></a>
+  {else/}
+  <div class="block mt-8 rounded-2xl overflow-hidden shadow-sm"><img src="/uploads/{$ads.square_mid.image}" class="w-full h-[80px] object-cover"></div>
+  {/if}
+  {/if}
+  {if condition="$ads.square_bottom"}
+  {if condition="$ads.square_bottom.url"}
+  <a href="{$ads.square_bottom.url}" target="_blank" rel="noopener noreferrer" onclick="trackAdClick({$ads.square_bottom.id})" class="block mt-4 rounded-2xl overflow-hidden shadow-sm"><img src="/uploads/{$ads.square_bottom.image}" class="w-full h-[80px] object-cover"></a>
+  {else/}
+  <div class="block mt-4 rounded-2xl overflow-hidden shadow-sm"><img src="/uploads/{$ads.square_bottom.image}" class="w-full h-[80px] object-cover"></div>
+  {/if}
+  {/if}
+</div>
+
+<!-- 收款码放大查看 -->
+<div id="qrBigModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 p-4" onclick="this.classList.add('hidden');this.classList.remove('flex')">
+  <img id="qrBigImg" src="" class="max-w-[80vw] max-h-[80vh] bg-white rounded-2xl p-4">
+</div>
+{/block}
+
+{block name="scripts"}
+{literal}
+<script>
+  function showBigQr(src){ document.getElementById('qrBigImg').src = src; var m=document.getElementById('qrBigModal'); m.classList.remove('hidden'); m.classList.add('flex'); }
+</script>
+{/literal}
+{/block}

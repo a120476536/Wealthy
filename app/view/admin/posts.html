@@ -1,0 +1,89 @@
+{extend name="admin/layout" /}
+{block name="page_title"}{:lang('博文管理')}{/block}
+
+{block name="main"}
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h3 class="card-title">{:lang('博文列表（共 %s）', [$total])}</h3>
+    <div class="flex items-center gap-2 flex-wrap">
+      <a href="/admin/posts?status=" class="btn btn-sm {if condition="$status eq ''"}btn-primary{else/}btn-default{/if}">{:lang('全部')}</a>
+      <a href="/admin/posts?status=1" class="btn btn-sm {if condition="$status eq '1'"}btn-primary{else/}btn-default{/if}">{:lang('待审核')}</a>
+      <a href="/admin/posts?status=2" class="btn btn-sm {if condition="$status eq '2'"}btn-primary{else/}btn-default{/if}">{:lang('已发布')}</a>
+      <a href="/admin/posts?status=3" class="btn btn-sm {if condition="$status eq '3'"}btn-primary{else/}btn-default{/if}">{:lang('驳回')}</a>
+      <form class="form-inline" method="get" action="/admin/posts">
+        <input type="hidden" name="status" value="{$status}">
+        <input type="text" name="kw" value="{$kw}" placeholder="{:lang('搜索标题/内容/作者')}" class="form-control form-control-sm !w-44">
+        <button class="btn btn-sm btn-primary whitespace-nowrap">搜索</button>
+      </form>
+    </div>
+  </div>
+  <div class="card-body table-responsive p-0">
+    <table class="table table-hover text-nowrap">
+      <thead><tr><th>ID</th><th>{:lang('作者')}</th><th>{:lang('标题')}</th><th>{:lang('分类')}</th><th>{:lang('状态')}</th><th>{:lang('浏览')}</th><th>{:lang('评论')}</th><th>{:lang('时间')}</th><th>{:lang('操作')}</th></tr></thead>
+      <tbody>
+      {foreach $posts as $p}
+        <tr>
+          <td>{$p.id}</td>
+          <td>{if condition="isset($users[$p.user_id])"}{$users[$p.user_id]['username']}{else/}{:lang('匿名')}{/if}</td>
+          <td><a href="/post/{$p.id}" target="_blank">{$p.title}</a></td>
+          <td>{if condition="isset($cats[$p.category_id])"}{$cats[$p.category_id]}{else/}-{/if}</td>
+          <td><span class="{:audit_status_badge($p.status)} badge">{:post_status_text($p.status)}</span></td>
+          <td>{$p.view_count}</td>
+          <td>{$p.comment_count}</td>
+          <td>{$p.created_at}</td>
+          <td>
+            {if condition="$p.status eq 1"}<button onclick="audit({$p.id}, 'pass')" class="btn btn-xs btn-success">{:lang('通过')}</button>{/if}
+            <button onclick="openReject({$p.id})" class="btn btn-xs btn-warning">{:lang('驳回')}</button>
+            <button onclick="del({$p.id})" class="btn btn-xs btn-danger">{:lang('删除')}</button>
+          </td>
+        </tr>
+      {/foreach}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-body">{$pager|raw}</div>
+</div>
+
+<div id="pModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 p-4 overflow-y-auto">
+  <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl my-8">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+      <h3 class="font-bold text-slate-900">{:lang('驳回博文')}</h3>
+      <button type="button" onclick="wbHide('pModal')" class="text-slate-400 hover:text-slate-700 text-xl leading-none">✕</button>
+    </div>
+    <div class="p-5 space-y-4">
+      <input type="hidden" id="pId">
+      <div><label class="block text-sm font-medium text-slate-600 mb-1">{:lang('驳回原因')}</label><textarea id="pReason" class="form-control" rows="3" placeholder="{:lang('选填')}"></textarea></div>
+    </div>
+    <div class="px-5 py-4 bg-slate-50 flex gap-3">
+      <button class="btn btn-default flex-1" onclick="wbHide('pModal')">取消</button>
+      <button class="btn btn-primary flex-1" onclick="audit($('#pId').val(), 'reject')">{:lang('确认驳回')}</button>
+    </div>
+  </div>
+</div>
+{/block}
+
+{block name="scripts"}
+{literal}
+<script>
+function audit(id, act){
+  if(act==='reject'){ var reason = $('#pReason').val()||''; }
+  else { var reason=''; }
+  var doFetch = function(){
+    var fd = new FormData(); fd.append('csrf_token', window.csrfToken); fd.append('id', id); fd.append('act', act); fd.append('reason', reason);
+    fetch('/admin/posts/audit', { method:'POST', body: fd, headers:{'X-Requested-With':'XMLHttpRequest'} })
+      .then(function(r){ return r.json(); }).then(function(res){ if(res.code===0){ wbHide('pModal'); location.reload(); } else wbToast(res.msg, 'error'); });
+  };
+  if(act==='reject'){ doFetch(); } else { wbConfirm(t('确认通过该博文？')).then(function(ok){ if(ok) doFetch(); }); }
+}
+function openReject(id){ $('#pId').val(id); $('#pReason').val(''); wbShow('pModal'); }
+function del(id){
+  wbConfirm(t('确认删除该博文（软删除）？')).then(function(ok){
+    if(!ok) return;
+    var fd = new FormData(); fd.append('csrf_token', window.csrfToken); fd.append('id', id);
+    fetch('/admin/posts/delete', { method:'POST', body: fd, headers:{'X-Requested-With':'XMLHttpRequest'} })
+      .then(function(r){ return r.json(); }).then(function(res){ if(res.code===0){ location.reload(); } else wbToast(res.msg, 'error'); });
+  });
+}
+</script>
+{/literal}
+{/block}
