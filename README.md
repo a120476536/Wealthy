@@ -6,6 +6,94 @@
 
 ---
 
+## 功能模块截图（演示）
+
+> 以下截图位于 [`assets/`](./assets) 目录，由 `tests/screenshots.cjs`（Playwright 自动抓取）生成，覆盖前台与后台主要功能模块，便于快速了解产品形态。
+
+### 前台（用户端）
+
+<table>
+  <tr>
+    <td align="center"><img src="assets/03-home.png" width="360"/><br/>首页 / 广场</td>
+    <td align="center"><img src="assets/01-login.png" width="360"/><br/>登录</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/02-register.png" width="360"/><br/>注册</td>
+    <td align="center"><img src="assets/04-posts.png" width="360"/><br/>帖子列表</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/05-post-detail.png" width="360"/><br/>帖子详情</td>
+    <td align="center"><img src="assets/06-user-home.png" width="360"/><br/>用户主页</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/07-search.png" width="360"/><br/>搜索</td>
+    <td align="center"><img src="assets/08-help-merchant-qr.png" width="360"/><br/>商家收款码说明</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/09-help-agreement.png" width="360"/><br/>用户协议</td>
+    <td align="center"><img src="assets/10-profile.png" width="360"/><br/>个人中心</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/11-profile-received.png" width="360"/><br/>收到的打赏</td>
+    <td align="center"><img src="assets/12-profile-posts.png" width="360"/><br/>我的帖子</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/13-profile-messages.png" width="360"/><br/>消息会话</td>
+    <td align="center"><img src="assets/14-profile-invite.png" width="360"/><br/>邀请好友</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/15-profile-points.png" width="360"/><br/>积分日志</td>
+    <td align="center">—</td>
+  </tr>
+</table>
+
+### 后台（运营端）
+
+<table>
+  <tr>
+    <td align="center"><img src="assets/16-admin-login.png" width="360"/><br/>后台登录</td>
+    <td align="center"><img src="assets/17-admin-dashboard.png" width="360"/><br/>仪表盘</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/18-admin-users.png" width="360"/><br/>用户管理</td>
+    <td align="center"><img src="assets/19-admin-qr-audit.png" width="360"/><br/>收款码审核</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/20-admin-tips.png" width="360"/><br/>打赏管理</td>
+    <td align="center"><img src="assets/21-admin-disputes.png" width="360"/><br/>纠纷处理</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/22-admin-posts.png" width="360"/><br/>文章管理</td>
+    <td align="center"><img src="assets/23-admin-post-category.png" width="360"/><br/>文章分类</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/24-admin-comments.png" width="360"/><br/>评论管理</td>
+    <td align="center"><img src="assets/25-admin-sensitive-words.png" width="360"/><br/>敏感词</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/26-admin-ads.png" width="360"/><br/>广告管理</td>
+    <td align="center"><img src="assets/27-admin-risk-monitor.png" width="360"/><br/>风控监控</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/28-admin-system-setting.png" width="360"/><br/>系统设置</td>
+    <td align="center"><img src="assets/29-admin-invite-codes.png" width="360"/><br/>邀请码</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/30-admin-admins.png" width="360"/><br/>管理员</td>
+    <td align="center"><img src="assets/31-admin-reports.png" width="360"/><br/>举报处理</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/32-admin-notifications.png" width="360"/><br/>通知发送</td>
+    <td align="center"><img src="assets/33-admin-notification-records.png" width="360"/><br/>通知记录</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/34-admin-logs.png" width="360"/><br/>操作日志</td>
+    <td align="center">—</td>
+  </tr>
+</table>
+
+---
+
 ## 一、这个项目主要做什么
 
 一句话概括：**一个让创作者发内容、读者用「收款码」直接打赏、平台统一做风控与变现的社区网站。**
@@ -156,6 +244,8 @@ Wealthy/
 ├── database/install.sql     # 数据库建表 SQL（21 张表）
 ├── public/                  # Web 根目录（uploads/ 上传文件存放于此）
 ├── runtime/                 # 运行时（日志 / 视图缓存 / 会话）
+├── assets/                  # 功能模块截图（README 演示用，由 tests/screenshots.cjs 生成）
+├── tests/                   # smoke.php（零依赖冒烟测试）/ screenshots.cjs（功能截图脚本）
 ├── start.php                # 启动入口
 └── composer.json
 ```
