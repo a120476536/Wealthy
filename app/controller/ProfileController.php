@@ -22,7 +22,7 @@ class ProfileController
             redirect('/login');
             return null;
         }
-        return (array)$user;
+        return user_points_safe((array)$user);
     }
 
     public function index(Request $request)

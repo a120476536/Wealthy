@@ -29,6 +29,8 @@ class FrontMiddleware implements MiddlewareInterface
             }
         }
         if ($uid) {
+            $row = null;
+            $dbError = false;
             try {
                 $row = Db::table('users')->where('id', $uid)->where('deleted_at', null)->first();
                 if ($row) {
@@ -43,21 +45,32 @@ class FrontMiddleware implements MiddlewareInterface
                     }
                 }
             } catch (\Throwable $e) {
-                $user = null;
+                // 数据库瞬时异常：仅本次按未登录渲染，严禁销毁登录态（否则 DB 抖动会导致全员掉线）。
+                // 同时保留会话，待 DB 恢复后下一请求即可正常登录。
+                $dbError = true;
+                \support\Log::error('FrontMiddleware user query failed: ' . $e->getMessage());
+            }
+            // 仅在“用户确实不存在 / 被软删”时清除登录态；$dbError（查询异常）时保留会话。
+            if (!$dbError && $row === null) {
+                $request->session()->forget(['user_id', 'front_auth_token']);
+                $uid = null;
             }
         }
 
-        // 广告位（转为数组供模板访问；始终包含全部 slot 键，无广告时为 null）
+        // 广告位（转为数组供模板访问；始终包含全部 slot 键）。
+        // 注意：无广告的 slot 必须给【空数组】而非 null —— 否则模板里 $ads.slot.field
+        // 会触发 "Trying to access array offset on null"（刚部署无数据/该位未配置广告时必炸）。
+        // 空数组既不会抛错，又能在 {if $ads.slot} 中被判定为 false（广告位空的就不显示）。
         $slots = ['square_top','square_mid','square_bottom','posts_top','posts_mid','posts_bottom','post_side','profile_side','user_top','user_side'];
         $ads = [];
         foreach ($slots as $slot) {
             $ad = ads_for($slot);
-            $ads[$slot] = $ad ? (array)$ad : null;
+            $ads[$slot] = $ad ? (array)$ad : [];
         }
 
         View::assign('user', $user);
         View::assign('uid', $uid ?? 0);
-        View::assign('my_points', $user ? (int)$user['points'] : 0);
+        View::assign('my_points', $user ? (int)($user['points'] ?? 0) : 0);
         View::assign('unread_count', $unread);
         View::assign('show_risk_banner', $showRiskBanner);
         View::assign('ads', $ads);

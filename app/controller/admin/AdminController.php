@@ -186,6 +186,7 @@ class AdminController
         }
         $total = $query->count();
         $users = db_arr($query->orderBy('created_at', 'desc')->offset(($page - 1) * $perPage)->limit($perPage)->get());
+        $users = array_map('user_points_safe', $users);
         $pager = $this->buildPager($page, (int)ceil($total / $perPage), '/admin/users', ['kw' => $kw, 'status' => $status]);
         return view('admin/users', ['users' => $users, 'kw' => $kw, 'status' => $status, 'total' => $total, 'pager' => $pager]);
     }
@@ -197,7 +198,7 @@ class AdminController
         if (!$user) return response('<h1>用户不存在</h1>', 404);
         $tips = db_arr(Db::table('tips')->where('to_user_id', $id)->orderBy('created_at', 'desc')->limit(20)->get());
         $posts = db_arr(Db::table('posts')->where('user_id', $id)->where('deleted_at', null)->orderBy('created_at', 'desc')->limit(20)->get());
-        return view('admin/user_detail', ['u' => (array)$user, 'tips' => $tips, 'posts' => $posts]);
+        return view('admin/user_detail', ['u' => user_points_safe((array)$user), 'tips' => $tips, 'posts' => $posts]);
     }
 
     public function userToggleStatus(Request $request)

@@ -6,7 +6,7 @@ return  [
             'driver'      => 'mysql',
             'host'        => '127.0.0.1',
             'port'        => '3306',
-            'database'    => 'wealthy',
+            'database'    => 'wealthy_installtest',
             'username'    => 'root',
             'password'    => 'root',
             'charset'     => 'utf8mb4',

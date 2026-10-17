@@ -61,12 +61,12 @@ function makeAd(string $path, string $title, string $bg): void {
 $avatarDir=$root.'/public/uploads/avatars'; $qrDir=$root.'/public/uploads/qr'; $adDir=$root.'/public/uploads/ads';
 ensureDir($avatarDir); ensureDir($qrDir); ensureDir($adDir);
 
-$tables=['users','tips','posts','post_categories','comments','likes','favorites','follows','notifications','ads','qr_audit_logs','tip_confirm_logs','post_audit_logs','comment_audit_logs','reports','sensitive_words','admin_logs','risk_remind_logs','invite_codes','invite_used_logs','admins'];
+// 注意：此处【不】包含 admins 表。管理员账号由安装向导(install.php)按你设置的
+// 账号密码创建，演示数据绝不能清空或覆盖管理员（曾经因此把用户自定义管理员
+// 删掉、换回 admin/admin888，已修复）。
+$tables=['users','tips','posts','post_categories','comments','likes','favorites','follows','notifications','ads','qr_audit_logs','tip_confirm_logs','post_audit_logs','comment_audit_logs','reports','sensitive_words','admin_logs','risk_remind_logs','invite_codes','invite_used_logs'];
 foreach($tables as $t){ $pdo->exec("DELETE FROM `$t`"); $pdo->exec("ALTER TABLE `$t` AUTO_INCREMENT=1"); }
 echo "=> cleared\n";
-
-$pdo->prepare("INSERT INTO admins (username,password,role,status,created_at,updated_at) VALUES (?,?,?,?,?,?)")
-    ->execute(['admin', password_hash('admin888', PASSWORD_BCRYPT), 'super', 1, date('Y-m-d H:i:s'), date('Y-m-d H:i:s')]);
 
 $cats=[['默认分类',1,1,1],['生活随笔',2,1,0],['技术分享',3,1,0],['赚钱思路',4,1,0],['摄影作品',5,1,0]];
 $catIds=[];

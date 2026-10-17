@@ -637,6 +637,22 @@ if (!function_exists('add_experience')) {
     }
 }
 
+if (!function_exists('user_points_safe')) {
+    /**
+     * 给单条用户数组补默认 points 键。
+     * 生产库若因 install.sql 过期缺少 points 列（见 database/migrate_production_columns.sql），
+     * 模板里 {$u.points} 会报 “Undefined array key” 导致渲染 500；此函数做兜底，避免崩溃。
+     * 注意：这仅是渲染兜底，真实积分值仍需补齐该列后才会正确显示（否则积分相关操作会失败）。
+     */
+    function user_points_safe(array $u): array
+    {
+        if (!array_key_exists('points', $u)) {
+            $u['points'] = 0;
+        }
+        return $u;
+    }
+}
+
 if (!function_exists('add_points')) {
     /**
      * 增减用户积分，并写入 points_logs 流水。

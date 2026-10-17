@@ -31,13 +31,16 @@
       <div>
         <div class="flex items-center justify-between mb-1.5">
           <label class="block text-sm font-medium text-slate-600">{:lang('正文')}</label>
-          <button type="button" onclick="openMdModal()" class="text-xs px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200">📥 {:lang('从 Markdown 导入')}</button>
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="openMdModal()" class="text-xs px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200">📥 {:lang('从 Markdown 导入')}</button>
+            <button type="button" onclick="openDocModal()" class="text-xs px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200">📄 {:lang('导入 Word / PDF')}</button>
+          </div>
         </div>
         <div class="border border-slate-200 rounded-xl overflow-hidden">
           <div id="toolbar" class="border-b border-slate-100"></div>
           <div id="editor" class="min-h-[320px]"></div>
         </div>
-        <p class="text-xs text-slate-400 mt-1.5">{:lang('支持富文本编辑，图片将自动上传；也可一键从 Markdown 导入（含图片本地化）。')}</p>
+        <p class="text-xs text-slate-400 mt-1.5">{:lang('支持富文本编辑，图片将自动上传；也可一键从 Markdown 导入，或导入 Word/PDF 文档。')}</p>
       </div>
 
       <div class="flex items-center justify-end gap-3 pt-2">
@@ -72,6 +75,23 @@
       <div class="flex justify-end gap-3 mt-4">
         <button type="button" onclick="closeMdModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50">{:lang('取消')}</button>
         <button id="mdImportBtn" type="button" onclick="doMdImport()" class="px-4 py-2 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700">{:lang('导入并填充')}</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Word / PDF 导入弹窗（方案 A：浏览器端转换，复用 /post/md-import） -->
+  <div id="docModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4">
+    <div class="bg-white w-full max-w-2xl rounded-2xl p-6">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-lg font-bold text-slate-900">{:lang('导入 Word / PDF')}</h3>
+        <button type="button" onclick="closeDocModal()" class="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
+      </div>
+      <p class="text-xs text-slate-400 mb-3">{:lang('支持')} <b>.docx</b>{:lang('（保留标题/列表/表格/图片）与')} <b>.pdf</b>{:lang('（提取正文文本）。老版')} <b>.doc</b>{:lang('需服务器端 LibreOffice，暂未开启。')}</p>
+      <input id="docFile" type="file" accept=".docx,.pdf,.doc" class="text-sm text-slate-500">
+      <p class="text-xs text-slate-400 mt-2">{:lang('单文件建议 ≤ 20MB；大文件转换可能稍慢。')}</p>
+      <div class="flex justify-end gap-3 mt-4">
+        <button type="button" onclick="closeDocModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50">{:lang('取消')}</button>
+        <button id="docImportBtn" type="button" onclick="doDocImport()" class="px-4 py-2 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700">{:lang('导入并填充')}</button>
       </div>
     </div>
   </div>
@@ -232,6 +252,257 @@
         toast(msg, 'success');
       })
       .catch(function () { btn.disabled = false; btn.textContent = t('导入并填充'); toast(t('网络异常'), 'error'); });
+  }
+</script>
+
+<!-- 文档导入：mammoth 转 .docx → HTML；pdf.js 抽 PDF 正文文本 → HTML；均复用 /post/md-import -->
+<script src="/vendor/mammoth.browser.min.js"></script>
+<script src="/vendor/pdf.min.js"></script>
+<script>
+  function openDocModal() {
+    var m = document.getElementById('docModal');
+    m.classList.remove('hidden');
+    m.classList.add('flex');
+  }
+  function closeDocModal() {
+    var m = document.getElementById('docModal');
+    m.classList.add('hidden');
+    m.classList.remove('flex');
+  }
+
+  function doDocImport() {
+    var b0 = document.getElementById('docImportBtn');
+    b0.disabled = true; b0.textContent = t('处理中…');
+    var f = document.getElementById('docFile').files[0];
+    if (!f) { toast(t('请先选择文件'), 'error'); b0.disabled = false; b0.textContent = t('导入并填充'); return; }
+    var name = (f.name || '').toLowerCase();
+    if (name.endsWith('.docx')) {
+      var r = new FileReader();
+      r.onload = function (e) { convertDocx(e.target.result); };
+      r.readAsArrayBuffer(f);
+    } else if (name.endsWith('.pdf')) {
+      convertPdf(f);
+    } else if (name.endsWith('.doc')) {
+      finishDoc(t('老版 .doc 需服务器端 LibreOffice，暂未开启（可后续开启方案 C）'));
+    } else {
+      finishDoc(t('仅支持 .docx / .pdf / .doc'));
+    }
+  }
+
+  // ---- .docx → HTML（mammoth，保留标题/列表/表格/图片内联） ----
+  // 优先用 Web Worker 后台线程解析：mammoth 大文档同步解析会冻结主线程（浏览器报“页面无响应”）。
+  // Worker 创建/加载失败时回退到主线程旧逻辑，功能不丢。
+  function convertDocx(arrayBuffer) {
+    var btn = document.getElementById('docImportBtn');
+    btn.disabled = true; btn.textContent = t('解析文档中…');
+    try {
+      // 传给 worker 前 clone 一份 buffer（Transfer 后原 buffer 会被 detach，回退路径需保留原件）
+      var copy = arrayBuffer.slice(0);
+      var w = new Worker('/js/doc-import-worker.js');
+      var settled = false;
+      window.__docImportMode = 'worker';
+      console.log('[doc-import] worker mode');
+      w.onmessage = function (e) {
+        var d = e.data || {};
+        if (settled) { return; }
+        if (d.type === 'html') {
+          settled = true; w.terminate();
+          var html = d.html || '';
+          // 先把内联 base64 图片上传成本站短 URL，避免巨大 HTML 在前后端来回传输导致卡顿
+          uploadInlineImages(html, function (done, total) {
+            btn.textContent = t('上传图片 ') + done + '/' + total;
+          }).then(function (clean) {
+            importHtmlToEditor(clean, extractTitleFromHtml(html), '');
+          }).catch(function (err) { finishDoc(t('Word 处理失败：') + (err && err.message ? err.message : err)); });
+        } else if (d.type === 'error') {
+          settled = true; w.terminate();
+          finishDoc(t('Word 解析失败：') + (d.message || ''));
+        }
+      };
+      w.onerror = function () {
+        if (!settled) { settled = true; try { w.terminate(); } catch (e2) {} mainThreadConvertDocx(arrayBuffer); }
+      };
+      w.postMessage({ arrayBuffer: copy }, [copy]);
+    } catch (e) { mainThreadConvertDocx(arrayBuffer); }
+  }
+
+  // 主线程兜底：Worker 不可用时沿用旧逻辑（解析期间 UI 会短暂冻结，但功能可用）
+  function mainThreadConvertDocx(arrayBuffer) {
+    window.__docImportMode = 'main-thread-fallback';
+    console.log('[doc-import] main-thread fallback');
+    if (typeof mammoth === 'undefined') { finishDoc(t('mammoth.js 加载失败，请检查网络')); return; }
+    var btn = document.getElementById('docImportBtn');
+    btn.disabled = true; btn.textContent = t('解析文档中…');
+    // 用 setTimeout 让“解析中”按钮先重绘，避免 mammoth 同步解析大文档时 UI 看似卡死
+    setTimeout(function () {
+      mammoth.convertToHtml({ arrayBuffer: arrayBuffer }).then(function (res) {
+        var html = res.value || '';
+        // 先把内联 base64 图片上传成本站短 URL，避免巨大 HTML 在前后端来回传输导致卡顿
+        return uploadInlineImages(html, function (done, total) {
+          btn.textContent = t('上传图片 ') + done + '/' + total;
+        }).then(function (clean) {
+          importHtmlToEditor(clean, extractTitleFromHtml(html), '');
+        });
+      }).catch(function (err) { finishDoc(t('Word 解析失败：') + (err && err.message ? err.message : err)); });
+    }, 20);
+  }
+
+  // 把 HTML 中内联 base64 图片逐个上传到本站，替换为短 URL（并发 3，附带进度回调）
+  function uploadInlineImages(html, onProgress) {
+    var doc = new DOMParser().parseFromString(html, 'text/html');
+    var imgs = Array.prototype.slice.call(doc.querySelectorAll('img[src^="data:image"]'));
+    if (!imgs.length) { return Promise.resolve(doc.body.innerHTML); }
+    var total = imgs.length, done = 0;
+    return mapLimit(imgs, 3, function (img) {
+      return uploadOneImage(img).then(function () {
+        done++; if (onProgress) onProgress(done, total);
+      });
+    }).then(function () { return doc.body.innerHTML; });
+  }
+
+  function uploadOneImage(img) {
+    var src = img.getAttribute('src') || '';
+    var m = src.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,/);
+    if (!m) { return Promise.resolve(); }
+    var mime = m[1];
+    var ext = mime === 'image/png' ? 'png' : (mime === 'image/webp' ? 'webp' : 'jpg');
+    var bin = atob(src.split(',')[1]);
+    var arr = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) { arr[i] = bin.charCodeAt(i); }
+    var blob = new Blob([arr], { type: mime });
+    var fd = new FormData();
+    fd.append('file', blob, 'docimg.' + ext);
+    return fetch('/upload/image', {
+      method: 'POST',
+      headers: { 'X-CSRF-TOKEN': window.csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
+      body: fd
+    }).then(function (r) { return r.text(); }).then(function (url) {
+      if (url && url.indexOf('/uploads/') === 0) { img.setAttribute('src', url); }
+    }).catch(function () { /* 单张失败保留原 base64，不阻断整体导入 */ });
+  }
+
+  // 简单的并发限制执行器（limit 个并行）
+  function mapLimit(items, limit, fn) {
+    var i = 0, results = [];
+    function worker() {
+      if (i >= items.length) { return Promise.resolve(); }
+      var cur = i++;
+      return Promise.resolve(fn(items[cur], cur)).then(function (r) { results[cur] = r; }).then(worker);
+    }
+    var runners = [];
+    for (var k = 0; k < Math.min(limit, items.length); k++) { runners.push(worker()); }
+    return Promise.all(runners).then(function () { return results; });
+  }
+
+  // ---- .pdf → 正文文本（pdf.js，按页抽文本，丢版式与图片） ----
+  function convertPdf(file) {
+    if (typeof pdfjsLib === 'undefined') { finishDoc(t('pdf.js 加载失败，请检查网络')); return; }
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '/vendor/pdf.worker.min.js';
+    var r = new FileReader();
+    r.onload = function (e) {
+      var buf = new Uint8Array(e.target.result);
+      pdfjsLib.getDocument({ data: buf }).promise.then(function (pdf) {
+        var htmlParts = [];
+        var chain = Promise.resolve();
+        for (var p = 1; p <= pdf.numPages; p++) {
+          (function (pageNo) {
+            chain = chain.then(function () {
+              return pdf.getPage(pageNo).then(function (page) {
+                return page.getTextContent().then(function (tc) {
+                  var str = tc.items.map(function (it) { return it.str; }).join(' ');
+                  if (str.trim()) htmlParts.push('<p>' + escapeHtml(str) + '</p>');
+                });
+              });
+            });
+          })(p);
+        }
+        chain.then(function () {
+          if (!htmlParts.length) { finishDoc(t('未能从 PDF 提取文本')); return; }
+          importHtmlToEditor(htmlParts.join(''), '', '');
+        }).catch(function (err) { finishDoc(t('PDF 解析失败：') + (err && err.message ? err.message : err)); });
+      }).catch(function (err) { finishDoc(t('PDF 打开失败：') + (err && err.message ? err.message : err)); });
+    };
+    r.readAsArrayBuffer(file);
+  }
+
+  function extractTitleFromHtml(html) {
+    var m = html.match(/<h1[^>]*>(.*?)<\/h1>/is);
+    if (m) { var t = m[1].replace(/<[^>]+>/g, '').trim(); if (t) return t; }
+    return '';
+  }
+  function escapeHtml(s) {
+    return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  // 前端净化：移除 script/style/iframe 等危险标签与 on* 事件属性、javascript: 链接。
+  // 发布保存时 PostController 仍会再跑一次 sanitize_rich_html 兜底，此处用于导入阶段本地直接回填，
+  // 避免整段大 HTML 往返 /post/md-import 造成大文档卡顿。
+  function sanitizeHtmlClient(html) {
+    var doc = new DOMParser().parseFromString(html || '', 'text/html');
+    var bad = doc.querySelectorAll('script,style,iframe,object,embed,link,meta');
+    for (var i = 0; i < bad.length; i++) { if (bad[i].parentNode) { bad[i].parentNode.removeChild(bad[i]); } }
+    var all = doc.querySelectorAll('*');
+    for (var k = 0; k < all.length; k++) {
+      var el = all[k], attrs = el.attributes;
+      for (var j = attrs.length - 1; j >= 0; j--) {
+        var name = (attrs[j].name || '').toLowerCase();
+        var val = attrs[j].value || '';
+        if (name.indexOf('on') === 0) { el.removeAttribute(attrs[j].name); continue; }
+        if ((name === 'href' || name === 'src') && /^\s*javascript:/i.test(val)) { el.removeAttribute(attrs[j].name); }
+      }
+    }
+    return doc.body ? doc.body.innerHTML : '';
+  }
+
+  // 文档导入（docx/pdf）：本地净化后直接回填编辑器，彻底跳过 /post/md-import 的整段 HTML 往返（大文档卡顿主因）。
+  function importHtmlToEditor(html, title, extraMsg) {
+    if (!html || html.trim().length < 1) { finishDoc(t('内容为空')); return; }
+    var clean = sanitizeHtmlClient(html);
+    if (!clean.trim()) { finishDoc(t('内容为空')); return; }
+    var btn = document.getElementById('docImportBtn');
+    var done = function () {
+      if (title && !document.getElementById('title').value) { document.getElementById('title').value = title; }
+      closeDocModal();
+      if (btn) { btn.disabled = false; btn.textContent = t('导入并填充'); }
+      toast(t('已导入到编辑器') + (extraMsg ? '，' + extraMsg : ''), 'success');
+    };
+    // 大文档分块写入：wangEditor setHtml 全量渲染会冻结主线程十余秒（浏览器报“页面无响应”）。
+    // 改为逐批 dangerouslyInsertHtml + setTimeout 让出主线程，全程 UI 可响应并显示写入进度。
+    if (clean.length > 100000 && editor && typeof editor.dangerouslyInsertHtml === 'function') {
+      setHtmlChunked(clean, function (done_, total) {
+        if (btn) { btn.textContent = t('写入编辑器 ') + done_ + '/' + total; }
+      }, done);
+      return;
+    }
+    if (editor && typeof editor.setHtml === 'function') { editor.setHtml(clean); }
+    done();
+  }
+
+  // 把大 HTML 按顶层节点分批插入编辑器（批间让出主线程，避免冻结）
+  function setHtmlChunked(html, onProgress, done) {
+    var doc = new DOMParser().parseFromString(html, 'text/html');
+    var nodes = Array.prototype.slice.call(doc.body.children);
+    if (!nodes.length) { done(); return; }
+    editor.clear();
+    setTimeout(function () {
+      var i = 0, BATCH = 150;
+      function step() {
+        var batchHtml = '';
+        try { editor.focus(true); } catch (e1) {}
+        for (var k = 0; k < BATCH && i < nodes.length; k++, i++) { batchHtml += nodes[i].outerHTML; }
+        if (batchHtml) { editor.dangerouslyInsertHtml(batchHtml); }
+        if (onProgress) { onProgress(Math.min(i, nodes.length), nodes.length); }
+        if (i < nodes.length) { setTimeout(step, 0); }
+        else { done(); }
+      }
+      step();
+    }, 20);
+  }
+
+  function finishDoc(msg) {
+    var b = document.getElementById('docImportBtn');
+    if (b) { b.disabled = false; b.textContent = t('导入并填充'); }
+    toast(msg, 'error');
   }
 </script>
 {/block}
