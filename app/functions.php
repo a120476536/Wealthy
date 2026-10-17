@@ -350,7 +350,7 @@ if (!function_exists('sanitize_rich_html')) {
             $tag = $m[0];
             if (preg_match('#href=["\']([^"\']+)["\']#i', $tag, $h)) {
                 $href = $h[1];
-                if (!preg_match('#^(https?://|/|#|mailto:|tel:)#i', $href)) {
+                if (!preg_match('~^(https?://|/|#|mailto:|tel:)~i', $href)) {
                     // 危险协议（javascript: 等）：直接剥离 href 属性，避免点击执行
                     $tag = preg_replace('#\shref=["\'][^"\']*["\']#i', '', $tag);
                     return $tag;

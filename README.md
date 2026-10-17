@@ -14,22 +14,24 @@
 # 1) 安装依赖
 composer install
 
-# 2) 运行安装向导（一路回车用默认值：127.0.0.1 / 3306 / wealthy / root / root）
+# 2) 运行安装向导（交互式，一路回车用默认值：127.0.0.1 / 3306 / wealthy / root / root）
 php install.php
 
 # 非交互 / 脚本化安装：
 php install.php --host=127.0.0.1 --port=3306 --db=wealthy \
   --user=root --pass=root --admin-user=admin --admin-pass=admin888
 
-# 跳过演示数据（仅含管理员与基础配置）：
-php install.php --no-demo
+# 导入演示数据（默认【不】导入，需显式加 --demo；生产环境请勿加）：
+php install.php --demo
 
-# 重新安装（清空同名表并重建）：
+# 同步 / 对齐数据库结构（--force：仅创建缺失的表、补齐缺失的列，绝不删数据；
+#   已存在的管理员若未传 --admin-pass 则保留原密码。适合首次部署后补表、或升级旧库）：
 php install.php --force
 ```
 
-> ⚠️ 安装完成后请**删除 `install.php` 与 `install.lock`**，避免生产环境被重复安装或数据库配置泄露。
-> 数据库结构见 [`database/install.sql`](./database/install.sql)，演示数据见 [`database/seed.php`](./database/seed.php)（已支持 `WF_DB_*` 环境变量注入连接）。
+> ⚠️ 安全建议：确认安装无误、后续不再需要重跑安装向导后，请**删除 `install.php` 与 `install.lock`**，避免生产环境被重复安装或配置泄露。
+> 注意：`install.php --force` 可随时安全地重新对齐数据库结构（建缺失表 / 补缺失列，**不删数据**），线上升级旧库也用它，无需删库重建。
+> 数据库结构见 [`database/install.sql`](./database/install.sql)（23 张表，全部 `CREATE TABLE IF NOT EXISTS`、幂等可重复执行），演示数据见 [`database/seed.php`](./database/seed.php)。
 
 ## 功能模块截图（演示）
 
@@ -131,7 +133,7 @@ php install.php --force
 
 ### 1. 内容社区
 - **社区广场（`/posts`）**：博文列表，支持分类筛选、关键词搜索、按「热度 / 最新」排序，分页浏览（每页 10 条 + 带省略号页码指示器）。
-- **写博文（`/post/edit`）**：富文本图文编辑（HTML 已做安全净化，服务端压缩上传图片 ≤5MB），发布时选择分类，可直接发布或进入审核队列。
+- **写博文（`/post/create` 新建、`/post/{id}/edit` 编辑）**：富文本图文编辑（HTML 服务端净化、上传图片 ≤5MB 服务端压缩）；支持**一键从 Markdown 导入**、**导入 Word/PDF 文档**（`.docx` 用 mammoth 保留标题/列表/表格/图片，`.pdf` 用 pdf.js 抽取正文文本；二者均在前端净化后回填编辑器，避免大文档往返卡顿）；发布时选择分类，可直接发布或进入审核队列。
 - **文章详情（`/post/detail`）**：浏览正文、点赞 ❤、收藏 ⭐、评论 💬，实时统计阅读量。
 - **分类体系**：分类由管理员在后台维护，用户发布时下拉选择（不开放用户自建）。
 
@@ -155,6 +157,7 @@ php install.php --force
 - **敏感词过滤（`sensitive_words`）**：内置多类敏感词库（政治类 / 色情类 / 广告类 / 涉枪涉爆，共 1000+ 条），命中后可「替换 `***`」或「拒绝发布」。
 - **举报处理（`reports`）**：对博文 / 评论 / 收款码的举报进行查看、处理、忽略并记录处理备注。
 - **内容审核**：博文审核、评论审核（可在系统设置中开关，开关打开后内容需审核通过才展示）。
+- **上传与内容净化**：图片上传经「类型白名单 + GD 像素重编码（图片马失效）+ 强制站内扩展名」三重处理；富文本经 `sanitize_rich_html()` 服务端净化（剥离 `script/style/iframe`、仅放行站内 / 白名单图片、外链加 `rel="nofollow noopener"`、过滤 `javascript:` 等危险协议），降低存储型 XSS 风险。
 
 ### 5. 运营与变现
 - **广告管理（`ads`）**：10 个广告位（广场顶部 / 中 / 底、社区顶部 / 中 / 底、文章侧栏、个人主页侧栏 / 顶部等），支持：
@@ -164,6 +167,12 @@ php install.php --force
   - 后台列表展示每条广告累计点击数。
 - **邀请码（`invite_codes`）**：生成 / 禁用 / 删除，使用流水查看（`invite_used_logs`）。
 - **站内通知 / 公告（`notifications`）**：全站群发或定向推送给指定用户，前台「消息通知」可见。
+
+### 5.1 积分、签到与等级体系
+- **积分（`points`）**：用户行为产生积分变动并写入 `points_logs` 流水，类型涵盖：每日签到、发布博文、收到打赏、邀请奖励（含邀请注册奖励）、生成邀请码扣减、私信扣减、管理员发放 / 扣减。个人中心「积分日志」（`/profile/points-logs`）可查看全部明细。
+- **每日签到（`/profile/checkin`）**：由系统设置 `checkin_switch` 开关控制；开启后每日签到得 `daily_checkin_points`（默认 5）积分，按 `users.last_checkin_at` 判重防重复签到。
+- **经验与等级（`experience` / `level`）**：发布、互动等行为累积经验，按阈值自动升级；`calc_level()` / `level_progress()` 计算等级与进度。
+- **管理员调积分**：后台 `/user/adjust-points` 可对用户积分发放或扣减（分别记 `admin_grant` / `admin_deduct`）。
 
 ### 6. 管理后台（`/admin`）
 后台已用 **Tailwind CSS** 全面重写（替代原 AdminLTE），包含以下模块：
@@ -220,7 +229,7 @@ php install.php --force
 # 1. 安装依赖
 composer install
 
-# 2. 创建数据库并导入表结构（共 21 张表）
+# 2. 创建数据库并导入表结构（共 23 张表）
 mysql -u<user> -p <database_name> < database/install.sql
 
 # 3. 配置数据库连接与 Redis
@@ -258,15 +267,16 @@ Wealthy/
 │   │   ├── AuthController.php        # 注册 / 登录
 │   │   ├── UploadController.php      # 图片上传（含服务端压缩）
 │   │   ├── HelpController.php        # 帮助 / 协议页
+│   │   ├── SearchController.php      # 搜索（博文 / 用户）
 │   │   └── admin/AdminController.php # 全部后台管理功能
-│   ├── middleware/          # 中间件（FrontMiddleware / AdminAuth / SessionCsrf 等）
+│   ├── middleware/          # 中间件（FrontMiddleware / AdminAuth / SessionCsrf / LocaleMiddleware 等）
 │   ├── view/                # 视图（ThinkTemplate）
 │   │   ├── layout/          # 前台布局（_header / _footer / front_layout）
 │   │   ├── square/ post/ profile/ user/ auth/ help/  # 前台各模块
 │   │   └── admin/           # 后台（Tailwind 重写）
-│   └── functions.php        # 全局辅助函数（如 ads_for()、site_setting()）
+│   └── functions.php        # 全局辅助函数（site_setting / ads_for / sanitize_rich_html / add_points / add_experience / 等级经验 / 敏感词过滤 等）
 ├── config/                  # 配置（route / database / redis / ...）
-├── database/install.sql     # 数据库建表 SQL（21 张表）
+├── database/install.sql     # 数据库建表 SQL（23 张表）
 ├── public/                  # Web 根目录（uploads/ 上传文件存放于此）
 ├── runtime/                 # 运行时（日志 / 视图缓存 / 会话）
 ├── assets/                  # 功能模块截图（README 演示用，由 tests/screenshots.cjs 生成）
@@ -277,7 +287,7 @@ Wealthy/
 
 ---
 
-## 七、数据模型（21 张表）
+## 七、数据模型（23 张表）
 
 | 分类 | 表 |
 |---|---|
@@ -286,7 +296,7 @@ Wealthy/
 | 互动 | `likes`、`favorites`、`follows` |
 | 打赏 | `tips`、`tip_confirm_logs` |
 | 风控 / 安全 | `qr_audit_logs`、`risk_remind_logs`、`sensitive_words`、`reports` |
-| 运营 | `ads`、`notifications` |
+| 运营 / 积分 | `ads`、`notifications`、`points_logs` |
 | 系统 | `system_setting`、`admin_logs` |
 
 ---

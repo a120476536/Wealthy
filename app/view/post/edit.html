@@ -44,8 +44,8 @@
       </div>
 
       <div class="flex items-center justify-end gap-3 pt-2">
-        <button onclick="savePos'draft'" class="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-slate-50">{:lang('保存草稿')}</button>
-        <button onclick="savePos'publish'" class="px-5 py-2.5 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 shadow-sm">{if condition="$isEdit"}{:lang('保存修改')}{else/}{:lang('发布')}{/if}</button>
+        <button onclick="savePost('draft')" class="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-slate-50">{:lang('保存草稿')}</button>
+        <button onclick="savePost('publish')" class="px-5 py-2.5 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 shadow-sm">{if condition="$isEdit"}{:lang('保存修改')}{else/}{:lang('发布')}{/if}</button>
       </div>
     </div>
   </div>
