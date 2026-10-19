@@ -752,6 +752,17 @@ class AdminController
         return json(['code' => 0, 'msg' => '已保存']);
     }
 
+    public function adsDelete(Request $request)
+    {
+        $id = (int)$request->input('id', 0);
+        if (!$id) {
+            return json(['code' => 1, 'msg' => '参数错误']);
+        }
+        Db::table('ads')->where('id', $id)->delete();
+        $this->logAdmin($request, 'ads_delete', "id={$id}");
+        return json(['code' => 0, 'msg' => '已删除']);
+    }
+
     // 广告图片上传（后台专用，落地 public/uploads/ads，存相对路径 ads/xxx.ext）
     public function adsUpload(Request $request)
     {

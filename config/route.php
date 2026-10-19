@@ -4,6 +4,9 @@ use app\middleware\FrontMiddleware;
 use app\middleware\AdminAuth;
 
 // ===================== 前台（用户端） =====================
+// SEO：站点地图（无需登录，直接返回 XML，置于分组外避免走 FrontMiddleware）
+Route::get('/sitemap.xml', [app\controller\SitemapController::class, 'index']);
+
 Route::group('', function () {
     // 首页 / 广场
     Route::any('/', [app\controller\SquareController::class, 'index']);
@@ -96,6 +99,7 @@ Route::group('/admin', function () {
     Route::any('/ads', [app\controller\admin\AdminController::class, 'ads']);
     Route::post('/ads/save', [app\controller\admin\AdminController::class, 'adsSave']);
     Route::post('/ads/upload', [app\controller\admin\AdminController::class, 'adsUpload']);
+    Route::post('/ads/delete', [app\controller\admin\AdminController::class, 'adsDelete']);
     Route::any('/risk-monitor', [app\controller\admin\AdminController::class, 'riskMonitor']);
     Route::post('/risk-monitor/remind', [app\controller\admin\AdminController::class, 'riskRemind']);
     Route::post('/risk-monitor/mark-merchant', [app\controller\admin\AdminController::class, 'markMerchant']);

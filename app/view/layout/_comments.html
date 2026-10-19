@@ -19,7 +19,7 @@
     {if condition="$cm_top"}
     {foreach $cm_top as $c}
     <div class="flex gap-3">
-      <img src="{:avatar_url($cm_users[$c.user_id])}" class="w-9 h-9 rounded-full object-cover shrink-0">
+      <img src="{:avatar_url($cm_users[$c.user_id])}" class="w-9 h-9 rounded-full object-cover shrink-0" alt="{$cm_users[$c.user_id]['username']}">
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-2">
           <span class="text-sm font-medium text-slate-800">{if condition="isset($cm_users[$c.user_id])"}{$cm_users[$c.user_id]['username']}{else/}{:lang('匿名')}{/if}</span>
@@ -44,7 +44,7 @@
         <div class="mt-3 space-y-3 pl-3 border-l-2 border-slate-100">
           {foreach $cm_replies[$c.id] as $r}
           <div class="flex gap-2">
-            <img src="{:avatar_url($cm_users[$r.user_id])}" class="w-7 h-7 rounded-full object-cover shrink-0">
+            <img src="{:avatar_url($cm_users[$r.user_id])}" class="w-7 h-7 rounded-full object-cover shrink-0" alt="{$cm_users[$r.user_id]['username']}">
             <div class="flex-1 min-w-0">
               <span class="text-xs font-medium text-slate-800">{if condition="isset($cm_users[$r.user_id])"}{$cm_users[$r.user_id]['username']}{else/}{:lang('匿名')}{/if}</span>
               <span class="text-xs text-slate-400 ml-2">{:time_ago($r.created_at)}</span>

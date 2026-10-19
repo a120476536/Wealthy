@@ -1,5 +1,9 @@
 {extend name="layout/front_layout" /}
 {block name="title"}{$post.title} · {$site_name}{/block}
+{block name="description"}{if condition="$post.summary"}{$post.summary}{else/}{:lang($site_slogan)}{/if}{/block}
+{block name="og_title"}{$post.title}{/block}
+{block name="og_desc"}{if condition="$post.summary"}{$post.summary}{else/}{:lang($site_slogan)}{/if}{/block}
+{block name="og_image"}{if condition="$post.cover"}{$post.cover}{else/}{$site_logo}{/if}{/block}
 
 {block name="main"}
 <div class="mx-auto max-w-6xl px-4 py-6">
@@ -11,7 +15,7 @@
       <article class="bg-white rounded-2xl shadow-sm p-6">
         <!-- 作者头部 -->
         <div class="flex items-center gap-3 pb-5 mb-5 border-b border-slate-100">
-          {if condition="$author"}<a href="/u/{$author.id}"><img src="{:avatar_url($author)}" class="w-12 h-12 rounded-full object-cover"></a>{else/}<div class="w-12 h-12 rounded-full bg-slate-200"></div>{/if}
+          {if condition="$author"}<a href="/u/{$author.id}"><img src="{:avatar_url($author)}" class="w-12 h-12 rounded-full object-cover" alt="{$author.username}"></a>{else/}<div class="w-12 h-12 rounded-full bg-slate-200"></div>{/if}
           <div class="min-w-0">
             <div class="flex items-center gap-2">
               <a href="/u/{$author.id}" class="font-semibold text-slate-900 hover:text-blue-600">{if condition="$author"}{$author.username}{else/}{:lang('匿名')}{/if}</a>
@@ -78,15 +82,15 @@
     <aside class="w-full lg:w-72 shrink-0 space-y-4">
       {if condition="$ads.post_side"}
       {if condition="$ads.post_side.url"}
-      <a href="{$ads.post_side.url}" target="_blank" rel="noopener noreferrer" onclick="trackAdClick({$ads.post_side.id})" class="block rounded-2xl overflow-hidden shadow-sm"><img src="/uploads/{$ads.post_side.image}" class="w-full h-32 object-cover"></a>
+      <a href="{$ads.post_side.url}" target="_blank" rel="noopener noreferrer" onclick="trackAdClick({$ads.post_side.id})" class="block rounded-2xl overflow-hidden shadow-sm"><img src="/uploads/{$ads.post_side.image}" class="w-full h-32 object-cover" alt="{$ads.post_side.title}"></a>
       {else/}
-      <div class="block rounded-2xl overflow-hidden shadow-sm"><img src="/uploads/{$ads.post_side.image}" class="w-full h-32 object-cover"></div>
+      <div class="block rounded-2xl overflow-hidden shadow-sm"><img src="/uploads/{$ads.post_side.image}" class="w-full h-32 object-cover" alt="{$ads.post_side.title}"></div>
       {/if}
       {/if}
 
       {if condition="$author"}
       <div class="bg-white rounded-2xl shadow-sm p-5 text-center">
-        <a href="/u/{$author.id}"><img src="{:avatar_url($author)}" class="w-16 h-16 rounded-full object-cover mx-auto"></a>
+        <a href="/u/{$author.id}"><img src="{:avatar_url($author)}" class="w-16 h-16 rounded-full object-cover mx-auto" alt="{$author.username}"></a>
         <a href="/u/{$author.id}" class="block font-semibold text-slate-900 mt-2 hover:text-blue-600">{$author.username}</a>
         <p class="text-xs text-slate-400 mt-1">{if condition="$author.follower_count"}{$author.follower_count}{else/}0{/if} {:lang('关注者')} · {if condition="$author.post_count"}{$author.post_count}{else/}0{/if} {:lang('篇博文')}</p>
         <div class="flex items-center gap-2 mt-3">

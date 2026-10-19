@@ -34,7 +34,7 @@
       {foreach $users as $u}
       <div class="bg-white rounded-2xl shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition p-5 flex flex-col">
         <div class="flex items-center gap-3">
-          <img src="{:avatar_url($u)}" class="w-12 h-12 rounded-full object-cover shadow-sm">
+          <img src="{:avatar_url($u)}" class="w-12 h-12 rounded-full object-cover shadow-sm" alt="{$u.username}">
           <div class="min-w-0">
             <p class="font-semibold text-slate-900 truncate">{$u.username}</p>
             <p class="text-xs {if condition="$u.qr_type eq 2"}text-emerald-600{else/}text-slate-400{/if}">{if condition="$u.qr_type eq 2"}{:lang('商户收款码')}{else/}{:lang('个人收款码')}{/if}</p>
@@ -87,7 +87,7 @@
       {foreach $posts as $p}
       <article class="bg-white rounded-2xl shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition p-5 flex flex-col">
         <div class="flex items-center gap-2 mb-3">
-          {if condition="$p.author"}<img src="{:avatar_url($p.author)}" class="w-7 h-7 rounded-full object-cover">{else/}<div class="w-7 h-7 rounded-full bg-slate-200"></div>{/if}
+          {if condition="$p.author"}<img src="{:avatar_url($p.author)}" class="w-7 h-7 rounded-full object-cover" alt="{$p.author.username}">{else/}<div class="w-7 h-7 rounded-full bg-slate-200"></div>{/if}
           <span class="text-xs text-slate-500">{if condition="$p.author"}{$p.author.username}{else/}{:lang('匿名')}{/if}</span>
           <span class="ml-auto text-[11px] text-slate-400">{:time_ago($p.created_at)}</span>
         </div>

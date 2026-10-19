@@ -5,9 +5,9 @@
 <div class="mx-auto max-w-6xl px-4 py-6">
   {if condition="$ads.posts_top"}
   {if condition="$ads.posts_top.url"}
-  <a href="{$ads.posts_top.url}" target="_blank" rel="noopener noreferrer" onclick="trackAdClick({$ads.posts_top.id})" class="block mb-6 rounded-2xl overflow-hidden shadow-sm"><img src="/uploads/{$ads.posts_top.image}" class="w-full h-[80px] object-cover"></a>
+  <a href="{$ads.posts_top.url}" target="_blank" rel="noopener noreferrer" onclick="trackAdClick({$ads.posts_top.id})" class="block mb-6 rounded-2xl overflow-hidden shadow-sm"><img src="/uploads/{$ads.posts_top.image}" class="w-full h-[80px] object-cover" alt="{$ads.posts_top.title}"></a>
   {else/}
-  <div class="block mb-6 rounded-2xl overflow-hidden shadow-sm"><img src="/uploads/{$ads.posts_top.image}" class="w-full h-[80px] object-cover"></div>
+  <div class="block mb-6 rounded-2xl overflow-hidden shadow-sm"><img src="/uploads/{$ads.posts_top.image}" class="w-full h-[80px] object-cover" alt="{$ads.posts_top.title}"></div>
   {/if}
   {/if}
 
@@ -41,7 +41,7 @@
         {foreach $posts as $p}
         <article class="bg-white rounded-2xl shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition p-5 flex flex-col">
           <div class="flex items-center gap-2 mb-3">
-            {if condition="$p.author"}<img src="{:avatar_url($p.author)}" class="w-7 h-7 rounded-full object-cover">{else/}<div class="w-7 h-7 rounded-full bg-slate-200"></div>{/if}
+            {if condition="$p.author"}<img src="{:avatar_url($p.author)}" class="w-7 h-7 rounded-full object-cover" alt="{$p.author.username}">{else/}<div class="w-7 h-7 rounded-full bg-slate-200"></div>{/if}
             <span class="text-xs text-slate-500">{if condition="$p.author"}{$p.author.username}{else/}{:lang('匿名')}{/if}</span>
             <span class="ml-auto text-[11px] text-slate-400">{:time_ago($p.created_at)}</span>
           </div>
@@ -77,9 +77,9 @@
     <aside class="w-full lg:w-72 shrink-0 space-y-4">
       {if condition="$ads.post_side"}
       {if condition="$ads.post_side.url"}
-      <a href="{$ads.post_side.url}" target="_blank" rel="noopener noreferrer" onclick="trackAdClick({$ads.post_side.id})" class="block rounded-2xl overflow-hidden shadow-sm"><img src="/uploads/{$ads.post_side.image}" class="w-full h-32 object-cover"></a>
+      <a href="{$ads.post_side.url}" target="_blank" rel="noopener noreferrer" onclick="trackAdClick({$ads.post_side.id})" class="block rounded-2xl overflow-hidden shadow-sm"><img src="/uploads/{$ads.post_side.image}" class="w-full h-32 object-cover" alt="{$ads.post_side.title}"></a>
       {else/}
-      <div class="block rounded-2xl overflow-hidden shadow-sm"><img src="/uploads/{$ads.post_side.image}" class="w-full h-32 object-cover"></div>
+      <div class="block rounded-2xl overflow-hidden shadow-sm"><img src="/uploads/{$ads.post_side.image}" class="w-full h-32 object-cover" alt="{$ads.post_side.title}"></div>
       {/if}
       {/if}
       <div class="bg-white rounded-2xl shadow-sm p-5">

@@ -342,7 +342,17 @@ if (!function_exists('sanitize_rich_html')) {
             if (!$isLocal) {
                 return '';
             }
-            return '<img src="' . htmlspecialchars($url, ENT_QUOTES) . '" class="max-w-full h-auto rounded-lg">';
+            // 全局补 alt：优先保留原文 alt，否则给一个通用描述（避免无障碍/SEO 缺失）
+            $alt = '';
+            if (preg_match('#\balt=["\']([^"\']*)["\']#i', $tag, $am)) {
+                $alt = trim($am[1]);
+            }
+            if ($alt === '') {
+                $alt = '图片';
+            }
+            return '<img src="' . htmlspecialchars($url, ENT_QUOTES)
+                . '" alt="' . htmlspecialchars($alt, ENT_QUOTES)
+                . '" class="max-w-full h-auto rounded-lg">';
         }, $html);
         // a 标签：仅放行安全协议（http/https/相对/锚点/mailto/tel），过滤 javascript: 等危险协议；
         // 外链强制加 rel="nofollow noopener"

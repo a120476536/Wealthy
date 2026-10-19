@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+
+# 后台与用户中心不收录
+Disallow: /admin
+Disallow: /profile
+Disallow: /login
+Disallow: /register
+Disallow: /logout
+Disallow: /post/create
+Disallow: /post/*/edit
+
+Sitemap: https://zf.zhengduimen.com/sitemap.xml

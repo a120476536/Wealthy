@@ -27,7 +27,7 @@
           <td>{if condition="isset($users[$r.user_id])"}{$users[$r.user_id]['username']}{/if}</td>
           <td>{:pay_type_text($r.channel)}</td>
           <td>{if condition="$r.qr_type eq 2"}{:lang('商户码')}{else/}{:lang('个人码')}{/if}</td>
-          <td><a href="/uploads/{$r.qr_path}" target="_blank"><img src="/uploads/{$r.qr_path}" width="60" height="60" class="img-thumbnail"></a></td>
+          <td><a href="/uploads/{$r.qr_path}" target="_blank"><img src="/uploads/{$r.qr_path}" width="60" height="60" class="img-thumbnail" alt="{:lang('收款码')}"></a></td>
           <td>{$r.created_at}</td>
           <td>
             <button onclick="audit({$r.id}, {$r.channel}, 'pass')" class="btn btn-xs btn-success">通过</button>

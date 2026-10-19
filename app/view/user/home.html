@@ -5,9 +5,9 @@
 <div class="mx-auto max-w-5xl px-4 py-6">
   {if condition="$ads.user_top"}
   {if condition="$ads.user_top.url"}
-  <a href="{$ads.user_top.url}" target="_blank" rel="noopener noreferrer" onclick="trackAdClick({$ads.user_top.id})" class="block mb-6 rounded-2xl overflow-hidden shadow-sm"><img src="/uploads/{$ads.user_top.image}" class="w-full h-[80px] object-cover"></a>
+  <a href="{$ads.user_top.url}" target="_blank" rel="noopener noreferrer" onclick="trackAdClick({$ads.user_top.id})" class="block mb-6 rounded-2xl overflow-hidden shadow-sm"><img src="/uploads/{$ads.user_top.image}" class="w-full h-[80px] object-cover" alt="{$ads.user_top.title}"></a>
   {else/}
-  <div class="block mb-6 rounded-2xl overflow-hidden shadow-sm"><img src="/uploads/{$ads.user_top.image}" class="w-full h-[80px] object-cover"></div>
+  <div class="block mb-6 rounded-2xl overflow-hidden shadow-sm"><img src="/uploads/{$ads.user_top.image}" class="w-full h-[80px] object-cover" alt="{$ads.user_top.title}"></div>
   {/if}
   {/if}
 
@@ -16,7 +16,7 @@
     <div class="h-28 bg-gradient-to-r from-blue-500 via-indigo-500 to-orange-400"></div>
     <div class="px-6 pb-6">
       <div class="flex flex-col sm:flex-row sm:items-end gap-4 -mt-10">
-        <img src="{:avatar_url($u)}" class="w-24 h-24 rounded-2xl object-cover border-4 border-white shadow-md">
+        <img src="{:avatar_url($u)}" class="w-24 h-24 rounded-2xl object-cover border-4 border-white shadow-md" alt="{$u.username}">
         <div class="flex-1 min-w-0 pb-1">
           <div class="flex items-center gap-2">
             <h1 class="text-xl font-bold text-slate-900">{$u.username}</h1>
@@ -53,8 +53,8 @@
       {if condition="$hasQr"}
       <div class="mt-5 flex items-center gap-4 p-4 rounded-2xl bg-slate-50">
         <div class="flex gap-3">
-          {if condition="$wx"}<div class="text-center"><img src="{$wx}" class="w-20 h-20 object-contain bg-white rounded-lg border border-slate-200"><p class="text-[11px] text-slate-400 mt-1">{:lang('微信')}</p></div>{/if}
-          {if condition="$ali"}<div class="text-center"><img src="{$ali}" class="w-20 h-20 object-contain bg-white rounded-lg border border-slate-200"><p class="text-[11px] text-slate-400 mt-1">{:lang('支付宝')}</p></div>{/if}
+          {if condition="$wx"}<div class="text-center"><img src="{$wx}" class="w-20 h-20 object-contain bg-white rounded-lg border border-slate-200" alt="{:lang('微信')}"><p class="text-[11px] text-slate-400 mt-1">{:lang('微信')}</p></div>{/if}
+          {if condition="$ali"}<div class="text-center"><img src="{$ali}" class="w-20 h-20 object-contain bg-white rounded-lg border border-slate-200" alt="{:lang('支付宝')}"><p class="text-[11px] text-slate-400 mt-1">{:lang('支付宝')}</p></div>{/if}
         </div>
         <p class="text-xs text-slate-500 leading-relaxed">{:lang('以上为')} {$u.username} {:lang('的')}<span class="text-slate-700 font-medium">{if condition="$u.qr_type eq 2"}{:lang('商户')}{/if}{:lang('收款码')}</span>{:lang('，打赏请使用对应 App 扫码，平台不代收资金。')}</p>
       </div>

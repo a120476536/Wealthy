@@ -50,7 +50,7 @@
             {elseif condition="$u.rank eq 2"}text-slate-400
             {elseif condition="$u.rank eq 3"}text-orange-400
             {else/}text-slate-300{/if}">{$u.rank}</span>
-          <img src="{:avatar_url($u)}" class="w-9 h-9 rounded-full object-cover shadow-sm">
+          <img src="{:avatar_url($u)}" class="w-9 h-9 rounded-full object-cover shadow-sm" alt="{$u.username}">
           <a href="/u/{$u.id}" class="flex-1 min-w-0 truncate text-sm text-slate-800 hover:text-blue-600">{$u.username}</a>
           <span class="text-sm font-semibold text-orange-500">¥{:format_amount($u.total)}</span>
         </li>
@@ -78,7 +78,7 @@
             {elseif condition="$u.rank eq 2"}text-slate-400
             {elseif condition="$u.rank eq 3"}text-teal-500
             {else/}text-slate-300{/if}">{$u.rank}</span>
-          <img src="{:avatar_url($u)}" class="w-9 h-9 rounded-full object-cover shadow-sm">
+          <img src="{:avatar_url($u)}" class="w-9 h-9 rounded-full object-cover shadow-sm" alt="{$u.username}">
           <a href="/u/{$u.id}" class="flex-1 min-w-0 truncate text-sm text-slate-800 hover:text-blue-600">{$u.username}</a>
           <span class="text-sm font-semibold text-emerald-500">¥{:format_amount($u.total)}</span>
         </li>
@@ -112,7 +112,7 @@
     {foreach $users as $u}
     <div class="bg-white rounded-2xl shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition p-5 flex flex-col">
       <div class="flex items-center gap-3">
-        <img src="{:avatar_url($u)}" class="w-12 h-12 rounded-full object-cover shadow-sm">
+        <img src="{:avatar_url($u)}" class="w-12 h-12 rounded-full object-cover shadow-sm" alt="{$u.username}">
         <div class="min-w-0">
           <p class="font-semibold text-slate-900 truncate">{$u.username}</p>
           <p class="text-xs {if condition="$u.qr_type eq 2"}text-emerald-600{else/}text-slate-400{/if}">{if condition="$u.qr_type eq 2"}{:lang('商户收款码')}{else/}{:lang('个人收款码')}{/if}</p>
@@ -170,23 +170,23 @@
   <!-- 中部 / 底部广告 -->
   {if condition="$ads.square_mid"}
   {if condition="$ads.square_mid.url"}
-  <a href="{$ads.square_mid.url}" target="_blank" rel="noopener noreferrer" onclick="trackAdClick({$ads.square_mid.id})" class="block mt-8 rounded-2xl overflow-hidden shadow-sm"><img src="/uploads/{$ads.square_mid.image}" class="w-full h-[80px] object-cover"></a>
+  <a href="{$ads.square_mid.url}" target="_blank" rel="noopener noreferrer" onclick="trackAdClick({$ads.square_mid.id})" class="block mt-8 rounded-2xl overflow-hidden shadow-sm"><img src="/uploads/{$ads.square_mid.image}" class="w-full h-[80px] object-cover" alt="{$ads.square_mid.title}"></a>
   {else/}
-  <div class="block mt-8 rounded-2xl overflow-hidden shadow-sm"><img src="/uploads/{$ads.square_mid.image}" class="w-full h-[80px] object-cover"></div>
+  <div class="block mt-8 rounded-2xl overflow-hidden shadow-sm"><img src="/uploads/{$ads.square_mid.image}" class="w-full h-[80px] object-cover" alt="{$ads.square_mid.title}"></div>
   {/if}
   {/if}
   {if condition="$ads.square_bottom"}
   {if condition="$ads.square_bottom.url"}
-  <a href="{$ads.square_bottom.url}" target="_blank" rel="noopener noreferrer" onclick="trackAdClick({$ads.square_bottom.id})" class="block mt-4 rounded-2xl overflow-hidden shadow-sm"><img src="/uploads/{$ads.square_bottom.image}" class="w-full h-[80px] object-cover"></a>
+  <a href="{$ads.square_bottom.url}" target="_blank" rel="noopener noreferrer" onclick="trackAdClick({$ads.square_bottom.id})" class="block mt-4 rounded-2xl overflow-hidden shadow-sm"><img src="/uploads/{$ads.square_bottom.image}" class="w-full h-[80px] object-cover" alt="{$ads.square_bottom.title}"></a>
   {else/}
-  <div class="block mt-4 rounded-2xl overflow-hidden shadow-sm"><img src="/uploads/{$ads.square_bottom.image}" class="w-full h-[80px] object-cover"></div>
+  <div class="block mt-4 rounded-2xl overflow-hidden shadow-sm"><img src="/uploads/{$ads.square_bottom.image}" class="w-full h-[80px] object-cover" alt="{$ads.square_bottom.title}"></div>
   {/if}
   {/if}
 </div>
 
 <!-- 收款码放大查看 -->
 <div id="qrBigModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 p-4" onclick="this.classList.add('hidden');this.classList.remove('flex')">
-  <img id="qrBigImg" src="" class="max-w-[80vw] max-h-[80vh] bg-white rounded-2xl p-4">
+  <img id="qrBigImg" src="" alt="{:lang('收款码大图')}" class="max-w-[80vw] max-h-[80vh] bg-white rounded-2xl p-4">
 </div>
 {/block}
 

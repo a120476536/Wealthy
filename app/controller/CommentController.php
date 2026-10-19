@@ -68,13 +68,30 @@ class CommentController
         } elseif ($targetType == 3) {
             $ownerId = $targetId;
         }
-        if ($ownerId && $ownerId != $uid) {
+
+        if ($parentId && $parent) {
+            // 二级回复：优先通知被回复者（父评论作者）—— 这才是直接的「对方」
+            if ($parent->user_id && $parent->user_id != $uid) {
+                Db::table('notifications')->insert([
+                    'user_id' => $parent->user_id, 'type' => 2, 'title' => '有人回复了你',
+                    'content' => mb_substr($content, 0, 60), 'related_id' => $cid,
+                    'is_read' => 0, 'created_at' => date('Y-m-d H:i:s'),
+                ]);
+            }
+            // 内容作者若不是被回复者本人，也通知（文章/主页有新互动）
+            if ($ownerId && $ownerId != $uid && $ownerId != $parent->user_id) {
+                Db::table('notifications')->insert([
+                    'user_id' => $ownerId, 'type' => 2, 'title' => '有人回复了你的内容',
+                    'content' => mb_substr($content, 0, 60), 'related_id' => $cid,
+                    'is_read' => 0, 'created_at' => date('Y-m-d H:i:s'),
+                ]);
+            }
+        } elseif ($ownerId && $ownerId != $uid) {
+            // 一级评论：通知内容作者（文章作者 / 主页主人 / 打赏接收人）
             Db::table('notifications')->insert([
-                'user_id' => $ownerId,
-                'type' => $parentId ? 2 : 1,
-                'title' => $parentId ? '有人回复了你' : '新的评论',
-                'content' => mb_substr($content, 0, 60),
-                'related_id' => $cid, 'is_read' => 0, 'created_at' => date('Y-m-d H:i:s'),
+                'user_id' => $ownerId, 'type' => 1, 'title' => '新的评论',
+                'content' => mb_substr($content, 0, 60), 'related_id' => $cid,
+                'is_read' => 0, 'created_at' => date('Y-m-d H:i:s'),
             ]);
         }
 

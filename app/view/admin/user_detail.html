@@ -6,7 +6,7 @@
   <div>
     <div class="card card-primary card-outline">
       <div class="card-body box-profile text-center">
-        <img src="{:avatar_url($u)}" class="rounded-circle profile-user-img img-fluid" width="96" height="96">
+        <img src="{:avatar_url($u)}" class="rounded-circle profile-user-img img-fluid" width="96" height="96" alt="{$u.username}">
         <h3 class="mt-2 mb-0">{$u.username}</h3>
         <p class="text-muted">{if condition="$u.bio"}{$u.bio}{else/}{:lang('（无简介）')}{/if}</p>
         <ul class="list-group list-group-unbordered mb-3">
@@ -27,11 +27,11 @@
       <div class="flex flex-wrap gap-6">
         <div class="text-center">
           <p class="text-sm text-slate-500 mb-2">{:lang('微信码')}（{:qr_status_text($u.wechat_qr_status)}）</p>
-          {if condition="$u.wechat_qr"}<img src="/uploads/{$u.wechat_qr}" width="160" height="160" class="img-thumbnail">{else/}<span class="text-slate-400 text-sm">{:lang('未上传')}</span>{/if}
+          {if condition="$u.wechat_qr"}<img src="/uploads/{$u.wechat_qr}" width="160" height="160" class="img-thumbnail" alt="{:lang('微信收款码')}">{else/}<span class="text-slate-400 text-sm">{:lang('未上传')}</span>{/if}
         </div>
         <div class="text-center">
           <p class="text-sm text-slate-500 mb-2">{:lang('支付宝码')}（{:qr_status_text($u.alipay_qr_status)}）</p>
-          {if condition="$u.alipay_qr"}<img src="/uploads/{$u.alipay_qr}" width="160" height="160" class="img-thumbnail">{else/}<span class="text-slate-400 text-sm">{:lang('未上传')}</span>{/if}
+          {if condition="$u.alipay_qr"}<img src="/uploads/{$u.alipay_qr}" width="160" height="160" class="img-thumbnail" alt="{:lang('支付宝收款码')}">{else/}<span class="text-slate-400 text-sm">{:lang('未上传')}</span>{/if}
         </div>
       </div>
     </div>

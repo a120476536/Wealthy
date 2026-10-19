@@ -20,7 +20,7 @@
       <div class="bg-white rounded-2xl shadow-sm divide-y divide-slate-50">
         {foreach $tips as $t}
         <div class="flex items-center gap-3 p-4">
-          <img src="{:avatar_url($users[$t.from_user_id] ?? $users[$t.to_user_id] ?? null)}" class="w-10 h-10 rounded-full object-cover">
+          <img src="{:avatar_url($users[$t.from_user_id] ?? $users[$t.to_user_id] ?? null)}" class="w-10 h-10 rounded-full object-cover" alt="{:lang('用户头像')}">
           <div class="flex-1 min-w-0">
             <p class="text-sm font-medium text-slate-800">
               {if condition="$mode eq 'received'"}{:lang('来自')} {if condition="isset($users[$t.from_user_id])"}{$users[$t.from_user_id]['username']}{else/}{:lang('游客')}{/if}

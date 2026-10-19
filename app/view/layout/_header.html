@@ -39,7 +39,7 @@
           <!-- 用户菜单 -->
           <div class="relative group">
             <button class="flex items-center gap-2 p-1 rounded-full hover:bg-slate-100 transition">
-              <img src="{:avatar_url($user)}" alt="" class="w-9 h-9 rounded-full object-cover ring-2 ring-white shadow">
+              <img src="{:avatar_url($user)}" alt="{$user.username}" class="w-9 h-9 rounded-full object-cover ring-2 ring-white shadow">
               <svg class="w-4 h-4 text-slate-400 hidden sm:block" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
             </button>
             <div class="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-lg border border-slate-100 py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150">

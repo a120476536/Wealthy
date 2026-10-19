@@ -1,7 +1,7 @@
 {// 个人中心侧边导航，依赖 $active / $u}
 <div class="bg-white rounded-2xl shadow-sm p-4">
   <div class="flex items-center gap-3 px-2 pb-4 mb-3 border-b border-slate-100">
-    <img src="{:avatar_url($u)}" class="w-11 h-11 rounded-full object-cover">
+    <img src="{:avatar_url($u)}" class="w-11 h-11 rounded-full object-cover" alt="{$u.username}">
     <div class="min-w-0">
       <p class="text-sm font-semibold text-slate-900 truncate">{$u.username}</p>
       <p class="text-[11px] text-slate-400 truncate">{if condition="$u.bio"}{$u.bio}{else/}{:lang('这个人很神秘')}{/if}</p>

@@ -4,17 +4,26 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>{block name="title"}{$site_name} · {:lang($site_slogan)}{/block}</title>
-  <meta name="description" content="{:lang($site_slogan)}">
+  <meta name="description" content="{block name="description"}{:lang($site_slogan)}{/block}">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="{$site_name}">
+  <meta property="og:title" content="{block name="og_title"}{$site_name}{/block}">
+  <meta property="og:description" content="{block name="og_desc"}{:lang($site_slogan)}{/block}">
+  <meta property="og:image" content="{block name="og_image"}{$site_logo}{/block}">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{block name="og_title"}{$site_name}{/block}">
+  <meta name="twitter:description" content="{block name="og_desc"}{:lang($site_slogan)}{/block}">
+  <meta name="twitter:image" content="{block name="og_image"}{$site_logo}{/block}">
   <link rel="shortcut icon" href="/favicon.ico"/>
 
   <!-- ===== CSS CDN 前台 ===== -->
   <!-- Tailwind v3.4.1 浏览器内 JIT（Play CDN，锁定版本；v3 没有可直接引用的完整静态 CSS 文件） -->
-  <script src="https://cdn.tailwindcss.com/3.4.1"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bulma@5/bulma.min.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js@1/src/toastify.min.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/filepond@4/dist/filepond.min.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@wangeditor/editor@5/dist/css/style.min.css">
+  <script src="/static/vendor/js/tailwindcss-3.4.1.js"></script>
+  <link rel="stylesheet" href="/static/vendor/css/sweetalert2-bulma.min.css">
+  <link rel="stylesheet" href="/static/vendor/css/toastify.min.css">
+  <link rel="stylesheet" href="/static/vendor/css/flatpickr.min.css">
+  <link rel="stylesheet" href="/static/vendor/css/filepond.min.css">
+  <link rel="stylesheet" href="/static/vendor/css/wangeditor.min.css">
 
   <style>
     body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif; }
@@ -73,7 +82,7 @@
         <!-- 扫码打赏区 -->
         <div id="tipScanBox">
           <div class="bg-slate-50 rounded-xl p-4 flex justify-center">
-            <img id="tipQr" src="" alt=t("收款码") class="w-48 h-48 object-contain bg-white rounded-lg">
+            <img id="tipQr" src="" alt="{:lang('收款码')}" class="w-48 h-48 object-contain bg-white rounded-lg">
           </div>
           <p class="text-center text-xs text-slate-400 mt-2">{:lang('请使用对应 App 扫码转账，平台不代收资金')}</p>
 
@@ -209,15 +218,15 @@
   </div>
 
   <!-- ===================== JS CDN 前台（顺序：jQuery 优先） ===================== -->
-  <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/jquery.validate.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/localization/messages_zh.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/toastify-js@1/src/toastify.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/filepond@4/dist/filepond.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/filepond-plugin-image-preview@4/dist/filepond-plugin-image-preview.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@wangeditor/editor@5/dist/index.min.js"></script>
+  <script src="/static/vendor/js/jquery.min.js"></script>
+  <script src="/static/vendor/js/jquery.validate.min.js"></script>
+  <script src="/static/vendor/js/messages_zh.min.js"></script>
+  <script src="/static/vendor/js/sweetalert2.all.min.js"></script>
+  <script src="/static/vendor/js/toastify.min.js"></script>
+  <script src="/static/vendor/js/flatpickr.min.js"></script>
+  <script src="/static/vendor/js/filepond.min.js"></script>
+  <script src="/static/vendor/js/filepond-plugin-image-preview.min.js"></script>
+  <script src="/static/vendor/js/wangeditor.min.js"></script>
 
   <!-- 全局变量（非 literal，可解析模板变量） -->
   <script>

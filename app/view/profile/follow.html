@@ -20,7 +20,7 @@
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {foreach $users as $fu}
         <div class="bg-white rounded-2xl shadow-sm p-4 flex items-center gap-3">
-          <a href="/u/{$fu.id}"><img src="{:avatar_url($fu)}" class="w-12 h-12 rounded-full object-cover"></a>
+          <a href="/u/{$fu.id}"><img src="{:avatar_url($fu)}" class="w-12 h-12 rounded-full object-cover" alt="{$fu.username}"></a>
           <div class="flex-1 min-w-0">
             <a href="/u/{$fu.id}" class="font-medium text-slate-800 hover:text-blue-600 truncate block">{$fu.username}</a>
             <p class="text-xs text-slate-400 truncate">{if condition="$fu.bio"}{$fu.bio}{else/}{:lang('这个人很神秘')}{/if}</p>

@@ -23,11 +23,14 @@
           <td><code>{$a.slot}</code>{if condition="$a.rec_w"}{$a.rec_w}×{$a.rec_h}{/if}</td>
           <td>{$a.title}</td>
           <td><a href="{$a.url}" target="_blank">{if condition="$a.url"}{$a.url}{else/}-{/if}</a></td>
-          <td>{if condition="$a.image"}<img src="/uploads/{$a.image}" width="60" height="40" class="img-thumbnail">{/if}</td>
+          <td>{if condition="$a.image"}<img src="/uploads/{$a.image}" width="60" height="40" class="img-thumbnail" alt="{$a.title}">{/if}</td>
           <td><small>{$a.start_at}<br>{$a.end_at}</small></td>
           <td>{$a.click_count|default=0}</td>
           <td>{if condition="$a.status eq 1"}<span class="badge badge-success">{:lang('启用')}</span>{else/}<span class="badge badge-secondary">{:lang('停用')}</span>{/if}</td>
-          <td><button class="btn btn-xs btn-info" onclick="openModal({$a.id}, '{$a.slot}', '{$a.title}', '{$a.url}', '{$a.image}', '{$a.start_at}', '{$a.end_at}', {$a.sort}, {$a.status})">编辑</button></td>
+          <td>
+            <button class="btn btn-xs btn-info" onclick="openModal({$a.id}, '{$a.slot}', '{$a.title}', '{$a.url}', '{$a.image}', '{$a.start_at}', '{$a.end_at}', {$a.sort}, {$a.status})">编辑</button>
+            <button class="btn btn-xs btn-danger" onclick="delAd({$a.id})">删除</button>
+          </td>
         </tr>
       {/foreach}
       </tbody>
@@ -36,40 +39,40 @@
   <div class="card-body">{$pager|raw}</div>
 </div>
 
-<div id="adModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 p-4 overflow-y-auto">
+<div id="pmModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 p-4 overflow-y-auto">
   <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl my-8">
     <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
       <h3 class="font-bold text-slate-900">{:lang('广告')}</h3>
-      <button type="button" onclick="wbHide('adModal')" class="text-slate-400 hover:text-slate-700 text-xl leading-none">✕</button>
+      <button type="button" onclick="wbHide('pmModal')" class="text-slate-400 hover:text-slate-700 text-xl leading-none">✕</button>
     </div>
     <div class="p-5 space-y-4">
-      <input type="hidden" id="adId">
+      <input type="hidden" id="pmId">
       <div><label class="block text-sm font-medium text-slate-600 mb-1">{:lang('广告位')}</label>
-        <select id="adSlot" class="form-control" onchange="onSlotChange()">
+        <select id="pmSlot" class="form-control" onchange="onSlotChange()">
           {foreach $slotMeta as $key => $m}
           <option value="{$key}" data-w="{$m.w}" data-h="{$m.h}">{$m.label}{:lang('（推荐 %s×%s）', [$m.w, $m.h])}</option>
           {/foreach}
         </select>
       </div>
-      <div><label class="block text-sm font-medium text-slate-600 mb-1">{:lang('标题')}</label><input id="adTitle" class="form-control"></div>
-      <div><label class="block text-sm font-medium text-slate-600 mb-1">{:lang('链接 URL')}</label><input id="adUrl" class="form-control" placeholder="{:lang('可填完整外链（含 http(s)://）或站内相对路径（/ 开头），勿填裸域名')}"></div>
+      <div><label class="block text-sm font-medium text-slate-600 mb-1">{:lang('标题')}</label><input id="pmTitle" class="form-control"></div>
+      <div><label class="block text-sm font-medium text-slate-600 mb-1">{:lang('链接 URL')}</label><input id="pmUrl" class="form-control" placeholder="{:lang('可填完整外链（含 http(s)://）或站内相对路径（/ 开头），勿填裸域名')}"></div>
       <div>
         <label class="block text-sm font-medium text-slate-600 mb-1">{:lang('广告图片')}</label>
-        <input type="file" id="adImageFile" accept="image/*" class="form-control" onchange="uploadAdImage(this)">
-        <input type="hidden" id="adImage">
-        <div id="adImagePreview" class="mt-2"></div>
-        <p id="adSlotTip" class="text-xs text-blue-600 mt-1"></p>
+        <input type="file" id="pmImageFile" accept="image/*" class="form-control" onchange="uploadAdImage(this)">
+        <input type="hidden" id="pmImage">
+        <div id="pmImagePreview" class="mt-2"></div>
+        <p id="pmSlotTip" class="text-xs text-blue-600 mt-1"></p>
         <p class="text-xs text-slate-400 mt-1">{:lang('支持 JPG/PNG/WEBP，≤5MB；选择后自动上传并填入路径（也可在下方手动修改路径）')}</p>
       </div>
       <div><label class="block text-sm font-medium text-slate-600 mb-1">{:lang('开始 / 结束时间')}</label>
-        <input id="adStart" class="form-control mb-2" placeholder="2026-01-01 00:00:00">
-        <input id="adEnd" class="form-control" placeholder="2026-12-31 23:59:59">
+        <input id="pmStart" class="form-control mb-2" placeholder="2026-01-01 00:00:00">
+        <input id="pmEnd" class="form-control" placeholder="2026-12-31 23:59:59">
       </div>
-      <div><label class="block text-sm font-medium text-slate-600 mb-1">{:lang('排序')}</label><input id="adSort" type="number" class="form-control"></div>
-      <div><label class="block text-sm font-medium text-slate-600 mb-1">状态</label><select id="adStatus" class="form-control"><option value="1">{:lang('启用')}</option><option value="0">{:lang('停用')}</option></select></div>
+      <div><label class="block text-sm font-medium text-slate-600 mb-1">{:lang('排序')}</label><input id="pmSort" type="number" class="form-control"></div>
+      <div><label class="block text-sm font-medium text-slate-600 mb-1">状态</label><select id="pmStatus" class="form-control"><option value="1">{:lang('启用')}</option><option value="0">{:lang('停用')}</option></select></div>
     </div>
     <div class="px-5 py-4 bg-slate-50 flex gap-3">
-      <button class="btn btn-default flex-1" onclick="wbHide('adModal')">取消</button>
+      <button class="btn btn-default flex-1" onclick="wbHide('pmModal')">取消</button>
       <button class="btn btn-primary flex-1" onclick="save()">保存</button>
     </div>
   </div>
@@ -80,20 +83,20 @@
 {literal}
 <script>
 function openModal(id, slot, title, url, image, start, end, sort, status){
-  $('#adId').val(id||0); $('#adSlot').val(slot||'square_top'); $('#adTitle').val(title||''); $('#adUrl').val(url||''); $('#adImage').val(image||'');
-  $('#adImagePreview').html(image ? '<img src="/uploads/'+image+'" class="img-thumbnail" style="max-height:90px">' : '');
-  $('#adImageFile').val('');
-  $('#adStart').val(start||''); $('#adEnd').val(end||''); $('#adSort').val(sort||0); $('#adStatus').val(status||1);
-  wbShow('adModal');
+  $('#pmId').val(id||0); $('#pmSlot').val(slot||'square_top'); $('#pmTitle').val(title||''); $('#pmUrl').val(url||''); $('#pmImage').val(image||'');
+  $('#pmImagePreview').html(image ? '<img src="/uploads/'+image+'" class="img-thumbnail" style="max-height:90px" alt="广告预览">' : '');
+  $('#pmImageFile').val('');
+  $('#pmStart').val(start||''); $('#pmEnd').val(end||''); $('#pmSort').val(sort||0); $('#pmStatus').val(status||1);
+  wbShow('pmModal');
   onSlotChange();
   if(image) checkImageSize('/uploads/'+image);
 }
 function onSlotChange(){
-  var opt = $('#adSlot').find('option:selected');
+  var opt = $('#pmSlot').find('option:selected');
   var w = opt.data('w'), h = opt.data('h');
   if(w && h){
-    $('#adSlotTip').text(t('推荐尺寸：'))+w+'×'+h+t('（通栏按此比例上传，超出部分会被裁切）');
-    var cur = $('#adImage').val();
+    $('#pmSlotTip').text(t('推荐尺寸：'))+w+'×'+h+t('（通栏按此比例上传，超出部分会被裁切）');
+    var cur = $('#pmImage').val();
     if(cur) checkImageSize('/uploads/'+cur);
   }
 }
@@ -102,7 +105,7 @@ function checkImageSize(url){
   var img = new Image();
   img.onload = function(){
     var w = img.naturalWidth, h = img.naturalHeight;
-    var opt = $('#adSlot').find('option:selected');
+    var opt = $('#pmSlot').find('option:selected');
     var rw = +opt.data('w'), rh = +opt.data('h');
     var tip = t('图片实际尺寸：')+w+'×'+h;
     if(rw && rh){
@@ -113,9 +116,9 @@ function checkImageSize(url){
         tip += t(' ✓ 与推荐 ')+rw+'×'+rh+t(' 适配良好');
       }
     }
-    $('#adSlotTip').text(tip);
+    $('#pmSlotTip').text(tip);
   };
-  img.onerror = function(){ $('#adSlotTip').text(''); };
+  img.onerror = function(){ $('#pmSlotTip').text(''); };
   img.src = url;
 }
 function uploadAdImage(input){
@@ -129,8 +132,8 @@ function uploadAdImage(input){
     .then(function(res){
       input.disabled = false;
       if(res.code !== 0){ wbToast(t('上传失败：') + (res.msg||t('未知错误')), 'error'); return; }
-      $('#adImage').val(res.path);
-      $('#adImagePreview').html('<img src="'+res.url+'" class="img-thumbnail" style="max-height:90px">');
+      $('#pmImage').val(res.path);
+      $('#pmImagePreview').html('<img src="'+res.url+'" class="img-thumbnail" style="max-height:90px" alt="广告预览">');
       checkImageSize(res.url);
     })
     .catch(function(e){ input.disabled = false; wbToast(t('上传失败'), 'error'); });
@@ -138,17 +141,28 @@ function uploadAdImage(input){
 function save(){
   var fd = new FormData();
   fd.append('csrf_token', window.csrfToken);
-  fd.append('id', $('#adId').val());
-  fd.append('slot', $('#adSlot').val());
-  fd.append('title', $('#adTitle').val());
-  fd.append('url', $('#adUrl').val());
-  fd.append('image', $('#adImage').val());
-  fd.append('start_at', $('#adStart').val());
-  fd.append('end_at', $('#adEnd').val());
-  fd.append('sort', $('#adSort').val());
-  fd.append('status', $('#adStatus').val());
+  fd.append('id', $('#pmId').val());
+  fd.append('slot', $('#pmSlot').val());
+  fd.append('title', $('#pmTitle').val());
+  fd.append('url', $('#pmUrl').val());
+  fd.append('image', $('#pmImage').val());
+  fd.append('start_at', $('#pmStart').val());
+  fd.append('end_at', $('#pmEnd').val());
+  fd.append('sort', $('#pmSort').val());
+  fd.append('status', $('#pmStatus').val());
   fetch('/admin/ads/save', { method:'POST', body: fd, headers:{'X-Requested-With':'XMLHttpRequest'} })
-    .then(function(r){ return r.json(); }).then(function(res){ if(res.code===0){ location.reload(); } else wbToast(res.msg, 'error'); });
+    .then(function(r){ return r.json(); }).then(function(res){ if(res.code===0){ location.reload(); } else wbToast(res.msg||t('保存失败'), 'error'); })
+    .catch(function(e){ wbToast(t('请求失败：') + e, 'error'); });
+}
+function delAd(id){
+  if(!id) return;
+  if(!confirm(t('确定删除该广告吗？此操作不可恢复。'))) return;
+  var fd = new FormData();
+  fd.append('csrf_token', window.csrfToken);
+  fd.append('id', id);
+  fetch('/admin/ads/delete', { method:'POST', body: fd, headers:{'X-Requested-With':'XMLHttpRequest'} })
+    .then(function(r){ return r.json(); }).then(function(res){ if(res.code===0){ location.reload(); } else wbToast(res.msg||t('删除失败'), 'error'); })
+    .catch(function(e){ wbToast(t('请求失败：') + e, 'error'); });
 }
 </script>
 {/literal}

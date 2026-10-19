@@ -4,10 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{block name="title"}管理后台{/block} · {$site_name}</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="/static/vendor/fontawesome/css/all.min.css">
   <!-- Tailwind v3.4.1 浏览器内 JIT（Play CDN，与前端一致） -->
-  <script src="https://cdn.tailwindcss.com/3.4.1"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+  <script src="/static/vendor/js/tailwindcss-3.4.1.js"></script>
+  <script src="/static/vendor/js/chart.umd.min.js"></script>
   <style type="text/tailwindcss">
     body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif; }
     ::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -112,7 +112,7 @@
       <a href="/admin/comments" class="nav-link {if condition="$active eq 'comments'"}active{/if}"><i class="nav-icon fas fa-comments w-5 text-center"></i><p>{:lang('评论管理')}</p></a>
       <a href="/admin/reports" class="nav-link {if condition="$active eq 'reports'"}active{/if}"><i class="nav-icon fas fa-flag w-5 text-center"></i><p>{:lang('举报处理')}</p></a>
       <a href="/admin/sensitive-words" class="nav-link {if condition="$active eq 'sensitive_words'"}active{/if}"><i class="nav-icon fas fa-ban w-5 text-center"></i><p>{:lang('敏感词')}</p></a>
-      <a href="/admin/ads" class="nav-link {if condition="$active eq 'ads'"}active{/if}"><i class="nav-icon fas fa-ad w-5 text-center"></i><p>{:lang('广告管理')}</p></a>
+      <a href="/admin/ads" class="nav-link {if condition="$active eq 'ads'"}active{/if}"><i class="nav-icon fas fa-bullhorn w-5 text-center"></i><p>{:lang('广告管理')}</p></a>
       <a href="/admin/risk-monitor" class="nav-link {if condition="$active eq 'risk_monitor'"}active{/if}"><i class="nav-icon fas fa-shield-alt w-5 text-center"></i><p>{:lang('风控监控')}</p></a>
       <a href="/admin/notifications" class="nav-link {if condition="$active eq 'notifications'"}active{/if}"><i class="nav-icon fas fa-bullhorn w-5 text-center"></i><p>{:lang('站内通知')}</p></a>
       <a href="/admin/notification-records" class="nav-link {if condition="$active eq 'notification_records'"}active{/if}"><i class="nav-icon fas fa-envelope-open-text w-5 text-center"></i><p>{:lang('通知记录')}</p></a>
@@ -156,8 +156,8 @@
     </footer>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+  <script src="/static/vendor/js/jquery.min.js"></script>
+  <script src="/static/vendor/js/sweetalert2.all.min.js"></script>
   <script>window.csrfToken = '{$csrf_token}';</script>
   <script>
     function toggleSidebar(){
