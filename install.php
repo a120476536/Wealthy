@@ -9,16 +9,9 @@
  *   交互（一路回车用默认值）：
  *     php install.php
  *   非交互（脚本化 / CI）：
- *     php install.php --host=127.0.0.1 --port=3306 --db=wealthy \
- *        --user=root --pass=root --admin-user=admin --admin-pass=admin888
- *   导入演示数据：  php install.php --demo   （默认【不】导入，生产环境请勿加）
- *   强制重装/同步： php install.php --force
- *                 （不会删除任何数据；仅把数据库补齐/同步到完整结构：缺表创建、缺列补齐）
- *
- * 注意：
- *   - 演示数据仅含示例用户/帖子/打赏等，且【永远不】包含管理员账号。
- *     管理员仅由你下面设置的账号密码创建，绝不会被覆盖为 admin888。
- *   - 演示数据默认不导入；如导入，也只会清空示例内容表，不影响你创建的管理员。
+ *     php install.php --host=127.0.0.1 --port=3306 --db=wealthy --user=root --pass=root --admin-user=admin --admin-pass=admin888
+ *   跳过演示数据：  php install.php --no-demo
+ *   强制重装：      php install.php --force
  *
  * 完成后请删除本文件（install.php），避免生产环境被重复安装或信息泄露。
  */
@@ -99,152 +92,6 @@ function wf_escape_php(string $v): string
 }
 
 // ------------------------------------------------------------------
-// 0.5  schema 辅助：解析 install.sql 的 CREATE TABLE，确保数据库完整（幂等、不删数据）
-// ------------------------------------------------------------------
-
-/** 解析 install.sql 中所有 CREATE TABLE，返回 [table => [[列名, 列定义], ...]] */
-function wf_parse_create_tables(string $sql): array
-{
-    // 先剥离 SQL 注释（-- 行注释 / # 行注释 / /* */ 块注释），避免注释中的
-    // "CREATE TABLE IF NOT EXISTS" 字样被误识别为建表语句，导致首张表名被错判为 IF。
-    $sql = preg_replace('/--[^\n]*/', ' ', $sql);
-    $sql = preg_replace('/#[^\n]*/', ' ', $sql);
-    $sql = preg_replace('/\/\*.*?\*\//s', ' ', $sql);
-    $sql = preg_replace('/^\s*CREATE\s+DATABASE\b.*?;\s*$/im', '', $sql);
-    $sql = preg_replace('/^\s*USE\s+`?[^`;\n]+`?\s*;\s*$/im', '', $sql);
-    $blocks = [];
-    $len = strlen($sql);
-    $i = 0;
-    while (($pos = stripos($sql, 'CREATE TABLE', $i)) !== false) {
-        if (!preg_match('/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?`?(\w+)`?/i', substr($sql, $pos), $mm)) {
-            $i = $pos + 12;
-            continue;
-        }
-        $tbl = $mm[1];
-        $p = strpos($sql, '(', $pos);
-        if ($p === false) { $i = $pos + 12; continue; }
-        // 括号深度匹配，定位该表定义结束的 ')'
-        $depth = 0; $inStr = false; $end = $p;
-        for ($j = $p; $j < $len; $j++) {
-            $ch = $sql[$j];
-            if ($ch === "'" || $ch === '"') {
-                $inStr = !$inStr;
-            } elseif (!$inStr && $ch === '(') {
-                $depth++;
-            } elseif (!$inStr && $ch === ')') {
-                $depth--;
-                if ($depth === 0) { $end = $j; break; }
-            }
-        }
-        $inner = substr($sql, $p + 1, $end - $p - 1);
-        // 顶层逗号切分列（忽略括号内逗号与字符串内逗号）
-        $cols = []; $d2 = 0; $inS2 = false; $buf = ''; $il = strlen($inner);
-        for ($k = 0; $k < $il; $k++) {
-            $ch = $inner[$k];
-            if ($ch === "'" || $ch === '"') { $inS2 = !$inS2; $buf .= $ch; }
-            elseif (!$inS2 && $ch === '(') { $d2++; $buf .= $ch; }
-            elseif (!$inS2 && $ch === ')') { $d2--; $buf .= $ch; }
-            elseif (!$inS2 && $d2 === 0 && $ch === ',') { $cols[] = trim($buf); $buf = ''; }
-            else { $buf .= $ch; }
-        }
-        if (trim($buf) !== '') $cols[] = trim($buf);
-        $out = [];
-        foreach ($cols as $c) {
-            if (preg_match('/^(PRIMARY|UNIQUE|KEY|CONSTRAINT|INDEX|FOREIGN|CHECK|SPATIAL|FULLTEXT)\b/i', $c)) continue;
-            if (!preg_match('/^`?(\w+)`?\s+(.*)$/s', $c, $cm)) continue;
-            $out[] = [$cm[1], trim($cm[2])];
-        }
-        $blocks[] = ['table' => $tbl, 'columns' => $out];
-        $i = $end;
-    }
-    return $blocks;
-}
-
-/** 给“已存在但缺列”的表补齐缺失列（NOT NULL 无默认值在有数据的表上失败时退化为可空） */
-function wf_align_columns(PDO $pdo): array
-{
-    $sql = file_get_contents($GLOBALS['sqlFile']);
-    $tables = wf_parse_create_tables($sql);
-    $added = 0; $skipped = 0; $failed = [];
-    foreach ($tables as $t) {
-        $tbl = $t['table'];
-        $has = $pdo->query("SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=" . $pdo->quote($tbl))->fetchColumn();
-        if (!$has) continue; // 该表由建表步骤创建，列已齐全
-        $existing = [];
-        foreach ($pdo->query("SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=" . $pdo->quote($tbl)) as $r) {
-            $existing[] = $r['COLUMN_NAME'];
-        }
-        foreach ($t['columns'] as $col) {
-            if (in_array($col[0], $existing, true)) { $skipped++; continue; }
-            $def = $col[1];
-            try {
-                $pdo->exec("ALTER TABLE `{$tbl}` ADD COLUMN `{$col[0]}` {$def}");
-                $added++;
-            } catch (PDOException $e) {
-                if (stripos($def, 'NOT NULL') !== false) {
-                    $def2 = str_ireplace('NOT NULL', 'NULL', $def);
-                    try {
-                        $pdo->exec("ALTER TABLE `{$tbl}` ADD COLUMN `{$col[0]}` {$def2}");
-                        $added++;
-                        continue;
-                    } catch (PDOException $e2) {
-                        $failed[] = "{$tbl}.{$col[0]}: {$e2->getMessage()}";
-                    }
-                } else {
-                    $failed[] = "{$tbl}.{$col[0]}: {$e->getMessage()}";
-                }
-            }
-        }
-    }
-    return ['added' => $added, 'skipped' => $skipped, 'failed' => $failed];
-}
-
-/** 一步到位：CREATE TABLE IF NOT EXISTS（不删数据）+ 补齐已有表缺失列 */
-function wf_create_and_align(PDO $pdo): array
-{
-    $sql = file_get_contents($GLOBALS['sqlFile']);
-    $sql = preg_replace('/^\s*CREATE\s+DATABASE\b.*?;\s*$/im', '', $sql);
-    $sql = preg_replace('/^\s*USE\s+`?[^`;\n]+`?\s*;\s*$/im', '', $sql);
-    $stmts = preg_split('/;\s*(?=\n|$)/', $sql);
-    $created = 0;
-    foreach ($stmts as $s) {
-        $s = trim($s);
-        if ($s === '' || stripos($s, 'CREATE DATABASE') === 0 || stripos($s, 'USE ') === 0
-            || stripos($s, 'INSERT ') === 0 || stripos($s, 'SET ') === 0) {
-            continue;
-        }
-        if (stripos($s, 'CREATE TABLE') === 0) {
-            if (preg_match('/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?`?(\w+)`?/i', $s, $mm)) {
-                $t = $mm[1];
-                $exists = $pdo->query("SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=" . $pdo->quote($t))->fetchColumn();
-                try {
-                    $pdo->exec($s);
-                    if (!$exists) $created++;
-                } catch (PDOException $e) {
-                    wf_echo("建表失败 `{$t}`：{$e->getMessage()}", 'red');
-                }
-            }
-        }
-    }
-    $align = wf_align_columns($pdo);
-    return [$created, $align['added'], $align['failed']];
-}
-
-/** 写入初始 system_setting（已存在则跳过，使用 INSERT IGNORE） */
-function wf_seed_settings(PDO $pdo): void
-{
-    $sql = file_get_contents($GLOBALS['sqlFile']);
-    if (preg_match('/INSERT INTO `system_setting`.*?;/is', $sql, $m)) {
-        $ins = preg_replace('/^INSERT INTO/', 'INSERT IGNORE INTO', $m[0], 1);
-        try {
-            $pdo->exec($ins);
-        } catch (PDOException $e) {
-            wf_echo("初始配置写入失败：{$e->getMessage()}", 'red');
-        }
-    }
-}
-
-// ------------------------------------------------------------------
 // 0. 环境与锁检查
 // ------------------------------------------------------------------
 if (PHP_SAPI !== 'cli') {
@@ -254,21 +101,20 @@ if (PHP_SAPI !== 'cli') {
 
 $args = wf_parse_args($argv);
 $force = isset($args['force']);
-$demoRequested = isset($args['demo']);   // 演示数据默认关闭，需显式 --demo 才导入
+$noDemo = isset($args['no-demo']);
 
 wf_echo('==================================================', 'bold');
 wf_echo('   造富计划 (Wealthy) 安装向导  v' . WF_INSTALLER_VERSION, 'bold');
 wf_echo('==================================================', 'reset');
 
 if (file_exists($lockFile) && !$force) {
-    wf_echo("\n检测到 install.php 已完成安装（install.lock 存在）。", 'yellow');
-    wf_echo("如需把数据库结构补齐/同步到最新完整版本（不会删除任何数据），请运行：", 'yellow');
-    wf_echo("  php install.php --force", 'cyan');
-    if (wf_prompt('确认以 --force 同步数据库结构（不删数据）？(y/N)', 'N') !== 'y') {
+    wf_echo("\n检测到 install.lock，系统似乎已安装。", 'yellow');
+    wf_echo("如需重新安装，请先删除 install.lock 或加 --force 参数。", 'yellow');
+    wf_echo("继续将清空目标数据库中已存在的同名表并重建。", 'yellow');
+    if (wf_prompt('确认强制重装？(y/N)', 'N') !== 'y') {
         wf_echo('已取消。', 'red');
         exit(0);
     }
-    $force = true; // 用户确认后按“同步模式”继续（仍不删除任何数据）
 }
 
 wf_step(1, '环境检查');
@@ -287,10 +133,10 @@ foreach ($checks as $name => $pass) {
     if (!$pass) $ok = false;
 }
 if (!$ok) {
-    wf_echo("\n[警告] 部分环境检查未通过；若为“同步已有数据库结构”可忽略并继续，全新安装建议先修复。", 'yellow');
-} else {
-    wf_echo('环境检查通过。', 'green');
+    wf_echo("\n环境检查未通过，请先解决上述问题后再运行安装。", 'red');
+    exit(1);
 }
+wf_echo('环境检查通过。', 'green');
 
 // ------------------------------------------------------------------
 // 2. 收集数据库配置
@@ -369,60 +215,61 @@ if (!file_exists($cfgFile)) {
 // ------------------------------------------------------------------
 // 5. 执行 install.sql（建表 + 初始配置）
 // ------------------------------------------------------------------
-wf_step(5, '确保数据库结构完整（建缺失表 + 补缺失列，不删数据）');
+wf_step(5, '创建数据表并写入初始配置');
 if (!file_exists($sqlFile)) {
     wf_echo("未找到 {$sqlFile}", 'red');
     exit(1);
 }
-list($tblCreated, $colAdded, $colFailed) = wf_create_and_align($pdo);
-wf_echo("数据库结构已就绪：新建表 {$tblCreated} 张，补齐缺失列 {$colAdded} 个" . ($colFailed ? "，失败 " . count($colFailed) . " 个" : ""), 'green');
-foreach ($colFailed as $f) {
-    wf_echo("  补齐失败：{$f}", 'red');
+$sql = file_get_contents($sqlFile);
+// 去掉 CREATE DATABASE / USE 语句（安装程序已自行建库选库）
+$sql = preg_replace('/^\s*CREATE\s+DATABASE\b.*?;\s*$/im', '', $sql);
+$sql = preg_replace('/^\s*USE\s+`?[^`;\n]+`?\s*;\s*$/im', '', $sql);
+
+$statements = preg_split('/;\s*(?=\n|$)/', $sql);
+$count = 0;
+foreach ($statements as $stmt) {
+    $stmt = trim($stmt);
+    if ($stmt === '' || stripos($stmt, 'CREATE DATABASE') === 0 || stripos($stmt, 'USE ') === 0) {
+        continue;
+    }
+    try {
+        $pdo->exec($stmt);
+        $count++;
+    } catch (PDOException $e) {
+        wf_echo("SQL 执行失败：" . substr($stmt, 0, 60) . " ...", 'red');
+        wf_echo("错误：{$e->getMessage()}", 'red');
+        exit(1);
+    }
 }
-wf_seed_settings($pdo);
-wf_echo("已写入初始 system_setting（已存在则跳过）", 'green');
+wf_echo("已执行 {$count} 条 SQL（建表 + 初始 system_setting）", 'green');
 
 // ------------------------------------------------------------------
 // 6. 创建管理员账号
 // ------------------------------------------------------------------
-wf_step(6, '管理员账号');
+wf_step(6, '创建管理员账号');
 $adminUser = $args['admin-user'] ?? '';
 $adminPass = $args['admin-pass'] ?? '';
-$adminPassProvided = isset($args['admin-pass']);
-
 if ($interactive) {
     $adminUser = wf_prompt('管理员用户名', $adminUser ?: 'admin');
-    $cur = $pdo->query("SELECT id FROM admins WHERE username = '{$adminUser}'")->fetchColumn();
-    if ($cur) {
-        wf_echo("管理员 `{$adminUser}` 已存在：将保留原密码（如需修改请加 --admin-pass=新密码 再运行）", 'yellow');
-    } else {
-        $adminPass = wf_prompt('管理员密码（≥6 位）', $adminPass ?: 'admin888', true);
-        $adminPassProvided = true;
-    }
+    $adminPass = wf_prompt('管理员密码（≥6 位）', $adminPass ?: 'admin888', true);
 }
-
-if ($adminUser === '' || mb_strlen($adminUser) < 2) {
+if (mb_strlen($adminUser) < 2) {
     wf_echo("管理员用户名过短", 'red');
     exit(1);
 }
+if (mb_strlen($adminPass) < 6) {
+    wf_echo("管理员密码至少 6 位", 'red');
+    exit(1);
+}
 $adminUser = wf_escape_php($adminUser);
-$cur = $pdo->query("SELECT id FROM admins WHERE username = '{$adminUser}'")->fetchColumn();
+$hash = password_hash($adminPass, PASSWORD_BCRYPT);
 
-if ($cur) {
-    // 已存在：仅当显式提供新密码时才更新（同步模式不会误改线上管理员密码）
-    if ($adminPassProvided && $adminPass !== '' && mb_strlen($adminPass) >= 6) {
-        $hash = password_hash($adminPass, PASSWORD_BCRYPT);
-        $pdo->exec("UPDATE admins SET password = '{$hash}', role = 'super', status = 1 WHERE id = {$cur}");
-        wf_echo("管理员 `{$adminUser}` 密码已更新", 'green');
-    } else {
-        wf_echo("管理员 `{$adminUser}` 已存在，保留原密码", 'yellow');
-    }
+// 若已存在同名管理员则更新，否则插入
+$exists = $pdo->query("SELECT id FROM admins WHERE username = '{$adminUser}'")->fetchColumn();
+if ($exists) {
+    $pdo->exec("UPDATE admins SET password = '{$hash}', role = 'super', status = 1 WHERE id = {$exists}");
+    wf_echo("管理员 `{$adminUser}` 已更新为超级管理员", 'green');
 } else {
-    if (mb_strlen($adminPass) < 6) {
-        wf_echo("管理员密码至少 6 位", 'red');
-        exit(1);
-    }
-    $hash = password_hash($adminPass, PASSWORD_BCRYPT);
     $pdo->exec("INSERT INTO admins (username, password, role, status, created_at, updated_at) VALUES ('{$adminUser}', '{$hash}', 'super', 1, NOW(), NOW())");
     wf_echo("已创建超级管理员 `{$adminUser}`", 'green');
 }
@@ -430,10 +277,10 @@ if ($cur) {
 // ------------------------------------------------------------------
 // 7. 导入演示数据（可选）
 // ------------------------------------------------------------------
-wf_step(7, '演示数据（默认不导入）');
-$demo = $demoRequested;
-if ($interactive) {
-    $demo = wf_prompt('是否导入演示数据(用户/帖子/打赏等)？建议生产环境选 n (y/N)', 'N') === 'y';
+wf_step(7, '演示数据');
+$demo = !$noDemo;
+if ($interactive && $demo) {
+    $demo = wf_prompt('是否导入演示数据(用户/帖子/打赏等)？(Y/n)', 'Y') !== 'n';
 }
 if ($demo) {
     if (!file_exists($seedFile)) {
